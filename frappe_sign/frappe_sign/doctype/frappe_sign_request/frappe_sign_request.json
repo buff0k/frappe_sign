@@ -12,6 +12,7 @@
   "created_by",
   "section_break_pbwo",
   "source_section",
+  "source_type",
   "source_doctype",
   "source_name",
   "source_title",
@@ -84,15 +85,19 @@
    "label": "Source"
   },
   {
+   "depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "fieldname": "source_doctype",
    "fieldtype": "Link",
    "label": "Source DocType",
+   "mandatory_depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "options": "DocType"
   },
   {
+   "depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "fieldname": "source_name",
    "fieldtype": "Dynamic Link",
    "label": "Source Name",
+   "mandatory_depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "options": "source_doctype"
   },
   {
@@ -174,9 +179,11 @@
    "label": "Files"
   },
   {
+   "depends_on": "eval:doc.source_type==\"Uploaded PDF\" || doc.source_pdf",
    "fieldname": "source_pdf",
    "fieldtype": "Attach",
-   "label": "Source PDF"
+   "label": "Source PDF",
+   "mandatory_depends_on": "eval:doc.source_type==\"Uploaded PDF\""
   },
   {
    "fieldname": "signed_pdf",
@@ -272,16 +279,24 @@
    "fieldtype": "Table",
    "label": "Fields",
    "options": "Frappe Sign Field"
+  },
+  {
+   "default": "Uploaded PDF",
+   "fieldname": "source_type",
+   "fieldtype": "Select",
+   "label": "Source Type",
+   "options": "Frappe Document\nUploaded PDF"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-07 12:16:07.504094",
+ "modified": "2026-07-07 14:20:00.708832",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Request",
+ "naming_rule": "By script",
  "owner": "Administrator",
  "permissions": [
   {

@@ -114,3 +114,35 @@ frappe.ui.form.on("Frappe Sign Request", {
         frm.set_value("source_name", null);
     },
 });
+
+frappe.ui.form.on("Frappe Sign Signer", {
+    signer_type(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if (row.signer_type === "External") {
+            frappe.model.set_value(cdt, cdn, "user", null);
+            frappe.model.set_value(cdt, cdn, "full_name", null);
+            frappe.model.set_value(cdt, cdn, "email", null);
+        }
+
+        frm.refresh_field("signers");
+    },
+
+    user(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if (!row.user) {
+            return;
+        }
+
+        frappe.db.get_value("User", row.user, ["full_name", "email"])
+            .then((response) => {
+                if (!response.message) {
+                    return;
+                }
+
+                frappe.model.set_value(cdt, cdn, "full_name", response.message.full_name);
+                frappe.model.set_value(cdt, cdn, "email", response.message.email);
+            });
+    },
+});

@@ -18,6 +18,12 @@ def sha256_text(value):
 
 
 def get_last_event_hash(request_name):
+    if not frappe.db.has_column("Frappe Sign Event", "event_hash"):
+        frappe.throw(
+            "Frappe Sign Event is missing required field 'event_hash'. "
+            "Please add the Event Hash field and run bench migrate."
+        )
+
     return frappe.db.get_value(
         "Frappe Sign Event",
         {"frappe_sign_request": request_name},

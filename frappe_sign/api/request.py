@@ -12,6 +12,36 @@ from frappe_sign.utils.tokens import generate_signing_token, hash_signing_token
 
 
 @frappe.whitelist()
+def is_enabled_for_doctype(doctype):
+    if not doctype:
+        return {"enabled": False}
+
+    if not is_frappe_sign_sender():
+        return {"enabled": False}
+
+    settings = frappe.get_single("Frappe Sign Settings")
+
+    if not settings.enabled:
+        return {"enabled": False}
+
+    source_config = get_source_config(settings, doctype)
+
+    if not source_config:
+        return {"enabled": False}
+
+    if source_config.required_sender_role:
+        if source_config.required_sender_role not in frappe.get_roles():
+            return {"enabled": False}
+
+    return {
+        "enabled": True,
+        "default_print_format": source_config.default_print_format,
+        "require_template": source_config.require_template,
+        "default_template": source_config.default_template,
+    }
+
+
+@frappe.whitelist()
 def create_from_source(doctype, name, print_format=None):
     if not is_frappe_sign_sender():
         frappe.throw("You do not have permission to create Frappe Sign requests.")
@@ -33,7 +63,7 @@ def create_from_source(doctype, name, print_format=None):
 
     if source_config.required_sender_role:
         if source_config.required_sender_role not in frappe.get_roles():
-            frappe.throw(f"You need the {source_config.required_sender_role} role to send this document.")
+            frappe.throw(f"You need the {source_config.required_sender_role} role to create a signing request for this document.")
 
     if not print_format:
         print_format = source_config.default_print_format
@@ -49,8 +79,9 @@ def create_from_source(doctype, name, print_format=None):
     request = frappe.get_doc(
         {
             "doctype": "Frappe Sign Request",
-            "request_title": f"{doctype} {name}",
+            "request_title": f"{doctype} - {name}",
             "created_by": frappe.session.user,
+            "source_type": "Frappe Document",
             "source_doctype": doctype,
             "source_name": name,
             "source_title": source_doc.get_title(),
@@ -68,7 +99,7 @@ def create_from_source(doctype, name, print_format=None):
     file_doc = attach_private_file(
         "Frappe Sign Request",
         request.name,
-        f"{doctype}-{name}-source.pdf",
+        f"{frappe.scrub(doctype)}-{name}-source.pdf",
         pdf_bytes,
     )
 
@@ -79,6 +110,7 @@ def create_from_source(doctype, name, print_format=None):
         request.name,
         "PDF Generated",
         details={
+            "source_type": "Frappe Document",
             "source_doctype": doctype,
             "source_name": name,
             "print_format": print_format,
@@ -113,11 +145,7 @@ def send_request(request_name):
     if request.status not in ("Draft", "Prepared"):
         frappe.throw("Only Draft or Prepared requests can be sent.")
 
-    if not request.signers:
-        frappe.throw("At least one signer is required.")
-
-    if not request.fields:
-        frappe.throw("At least one signing field is required.")
+    validate_ready_to_send(request)
 
     for signer in request.signers:
         if signer.role != "Signer":
@@ -294,3 +322,60 @@ def create_file_hash(request_name, file_type, file_url, sha256_hash, hash_purpos
     doc.insert()
 
     return doc
+
+
+def validate_ready_to_send(request):
+    if not request.source_pdf:
+        frappe.throw("A source PDF is required before sending.")
+
+    if not request.source_pdf_hash:
+        frappe.throw("The source PDF hash is required before sending.")
+
+    signer_rows = [row for row in request.signers if row.role == "Signer"]
+
+    if not signer_rows:
+        frappe.throw("At least one signer is required before sending.")
+
+    if not request.fields:
+        frappe.throw("At least one signing field is required before sending.")
+
+    required_fields = [row for row in request.fields if row.required]
+
+    if not required_fields:
+        frappe.throw("At least one required signing field is required before sending.")
+
+    signer_names = {row.name for row in signer_rows}
+
+    for signer in signer_rows:
+        if signer.signer_type == "User" and not signer.user:
+            frappe.throw("Each User signer must have a linked User.")
+
+        if signer.signer_type == "External":
+            if not signer.full_name:
+                frappe.throw("Each External signer must have a Full Name.")
+
+            if not signer.email:
+                frappe.throw("Each External signer must have an Email.")
+
+        if not signer.email:
+            frappe.throw("Each signer must have an email address.")
+
+    for field in request.fields:
+        if field.field_type in ("Signature", "Initials"):
+            if not field.signer:
+                frappe.throw("Each Signature and Initials field must be assigned to a signer.")
+
+            if field.signer not in signer_names:
+                frappe.throw("One or more signing fields are assigned to an invalid signer.")
+
+        if not field.page or field.page < 1:
+            frappe.throw("Each signing field must have a valid page number.")
+
+        for ratio_field in ("x_ratio", "y_ratio", "width_ratio", "height_ratio"):
+            value = field.get(ratio_field)
+
+            if value is None:
+                frappe.throw(f"{ratio_field} is required for each signing field.")
+
+            if value < 0 or value > 1:
+                frappe.throw(f"{ratio_field} must be between 0 and 1.")

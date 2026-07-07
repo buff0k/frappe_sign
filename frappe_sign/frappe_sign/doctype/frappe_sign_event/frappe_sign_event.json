@@ -14,6 +14,7 @@
   "user_agent",
   "details_json",
   "previous_hash",
+  "event_hash",
   "document_hash",
   "timestamp"
  ],
@@ -72,12 +73,17 @@
    "fieldname": "timestamp",
    "fieldtype": "Datetime",
    "label": "Timestamp"
+  },
+  {
+   "fieldname": "event_hash",
+   "fieldtype": "Data",
+   "label": "Event Hash"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-07 12:21:42.954946",
+ "modified": "2026-07-07 14:00:35.753548",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Event",

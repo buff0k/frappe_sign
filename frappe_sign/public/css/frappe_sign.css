@@ -171,3 +171,255 @@
 .frappe-sign-field-row:last-child {
     border-bottom: 0;
 }
+
+/* ==========================================================================
+   Frappe Sign Designer
+   ========================================================================== */
+
+.frappe-sign {
+    --frappe-sign-border: #d1d8dd;
+    --frappe-sign-muted-bg: #f7f7f7;
+    --frappe-sign-card-bg: #ffffff;
+    --frappe-sign-primary: #2490ef;
+    --frappe-sign-success: #2e9d64;
+    --frappe-sign-danger: #e24c4b;
+    --frappe-sign-text-muted: #6b7280;
+}
+
+.frappe-sign-designer {
+    max-width: none;
+    padding: 0;
+}
+
+.frappe-sign-designer-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--frappe-sign-card-bg);
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.frappe-sign-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#frappe-sign-zoom-label {
+    min-width: 48px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.frappe-sign-designer-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr) 150px;
+    gap: 12px;
+    align-items: start;
+}
+
+.frappe-sign-left-panel,
+.frappe-sign-right-panel {
+    position: sticky;
+    top: 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: calc(100vh - 90px);
+    overflow: auto;
+}
+
+.frappe-sign-card {
+    background: var(--frappe-sign-card-bg);
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.frappe-sign-card h4 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.frappe-sign-muted {
+    color: var(--frappe-sign-text-muted);
+    font-size: 12px;
+}
+
+.frappe-sign-field-palette {
+    display: grid;
+    gap: 8px;
+}
+
+.frappe-sign-palette-item {
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 6px;
+    background: #f8fafc;
+    padding: 8px 10px;
+    cursor: grab;
+    user-select: none;
+    font-weight: 600;
+}
+
+.frappe-sign-palette-item:hover {
+    border-color: var(--frappe-sign-primary);
+    background: #eef6ff;
+}
+
+.frappe-sign-palette-item:active {
+    cursor: grabbing;
+}
+
+.frappe-sign-document-panel {
+    min-width: 0;
+    background: #eef1f5;
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    padding: 18px;
+    max-height: calc(100vh - 120px);
+    overflow: auto;
+}
+
+.frappe-sign-pdf-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.frappe-sign-loading {
+    padding: 24px;
+    color: var(--frappe-sign-text-muted);
+}
+
+.frappe-sign-pdf-page-wrapper {
+    width: fit-content;
+}
+
+.frappe-sign-page-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--frappe-sign-text-muted);
+    margin-bottom: 6px;
+}
+
+.frappe-sign-pdf-page {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid var(--frappe-sign-border);
+    box-shadow: 0 3px 16px rgba(0, 0, 0, 0.16);
+}
+
+.frappe-sign-pdf-canvas {
+    display: block;
+}
+
+.frappe-sign-page-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+}
+
+.frappe-sign-field-box {
+    position: absolute;
+    z-index: 10;
+    border: 2px solid var(--frappe-sign-primary);
+    background: rgba(36, 144, 239, 0.12);
+    border-radius: 4px;
+    padding: 4px;
+    cursor: move;
+    overflow: hidden;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.frappe-sign-field-box-label {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.frappe-sign-field-box-signer {
+    font-size: 10px;
+    line-height: 1.1;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.frappe-sign-field-remove {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--frappe-sign-danger);
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 18px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.frappe-sign-resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    background: var(--frappe-sign-primary);
+    cursor: nwse-resize;
+    border-top-left-radius: 4px;
+}
+
+.frappe-sign-page-thumbnails {
+    display: grid;
+    gap: 10px;
+}
+
+.frappe-sign-page-thumb {
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 6px;
+    padding: 6px;
+    background: #ffffff;
+    cursor: pointer;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.frappe-sign-page-thumb:hover {
+    border-color: var(--frappe-sign-primary);
+    background: #eef6ff;
+}
+
+.frappe-sign-page-thumb canvas {
+    max-width: 100%;
+    display: block;
+    margin: 0 auto 4px;
+    border: 1px solid #e5e7eb;
+}
+
+.frappe-sign-field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--frappe-sign-border);
+}
+
+.frappe-sign-field-row:last-child {
+    border-bottom: 0;
+}

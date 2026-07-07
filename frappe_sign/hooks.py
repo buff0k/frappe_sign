@@ -70,6 +70,10 @@ app_include_css = [
     "/assets/frappe_sign/css/frappe_sign.css",
 ]
 
+app_include_js = [
+    "/assets/frappe_sign/js/frappe_sign_button.js",
+]
+
 # Includes in <head>
 # ------------------
 

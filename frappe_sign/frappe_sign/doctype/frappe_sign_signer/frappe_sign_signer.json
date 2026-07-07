@@ -33,33 +33,44 @@
    "default": "User",
    "fieldname": "signer_type",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Signer Type",
-   "options": "User\nExterma;"
+   "options": "User\nExternal"
   },
   {
-   "depends_on": "depends_on: eval:doc.signer_type==\"User\"",
+   "depends_on": "eval:doc.signer_type==\"User\"",
    "fieldname": "user",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "User",
+   "mandatory_depends_on": "eval:doc.signer_type==\"User\"",
    "options": "User"
   },
   {
-   "depends_on": "mandatory_depends_on: eval:doc.signer_type==\"External\"",
    "fieldname": "full_name",
    "fieldtype": "Data",
-   "label": "Full Name"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Full Name",
+   "mandatory_depends_on": "eval:doc.signer_type==\"External\""
   },
   {
-   "depends_on": "mandatory_depends_on: eval:doc.signer_type==\"External\"",
    "fieldname": "email",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Email",
+   "mandatory_depends_on": "eval:doc.signer_type==\"External\"",
    "options": "Email"
   },
   {
    "default": "Signer",
    "fieldname": "role",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Role",
    "options": "Signer\nViewer\nApprover"
   },
@@ -67,12 +78,16 @@
    "default": "1",
    "fieldname": "signing_order",
    "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Signing Order"
   },
   {
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nSent\nViewed\nSigned\nDeclined\nSkipped"
   },
@@ -159,7 +174,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-07 11:43:00.575818",
+ "modified": "2026-07-07 14:12:36.644089",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Signer",
