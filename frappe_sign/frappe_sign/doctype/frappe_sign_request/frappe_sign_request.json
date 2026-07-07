@@ -1,0 +1,333 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-07-07 12:01:53.322118",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_uhsm",
+  "amended_from",
+  "request_title",
+  "created_by",
+  "section_break_pbwo",
+  "source_section",
+  "source_doctype",
+  "source_name",
+  "source_title",
+  "print_format",
+  "section_break_bgsl",
+  "workflow_section",
+  "status",
+  "signing_mode",
+  "current_signing_order",
+  "expires_on",
+  "completed_on",
+  "cancelled_on",
+  "declined_on",
+  "decline_reason",
+  "section_break_ahhb",
+  "files_section",
+  "source_pdf",
+  "signed_pdf",
+  "audit_certificate",
+  "certificate_signed_pdf",
+  "section_break_zdzk",
+  "hashes_section",
+  "source_pdf_hash",
+  "signed_pdf_hash",
+  "certificate_signed_pdf_hash",
+  "audit_chain_hash",
+  "tamper_status",
+  "options_section",
+  "submit_source_on_completion",
+  "attach_signed_pdf_to_source",
+  "signers_section",
+  "signers",
+  "fields_section",
+  "fields"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_uhsm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Frappe Sign Request",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "request_title",
+   "fieldtype": "Data",
+   "label": "Request Title"
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Link",
+   "label": "Created By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_pbwo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Column Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "Source DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Source Name",
+   "options": "source_doctype"
+  },
+  {
+   "fieldname": "source_title",
+   "fieldtype": "Data",
+   "label": "Source Title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "label": "Print Format",
+   "options": "Print Format"
+  },
+  {
+   "fieldname": "section_break_bgsl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "workflow_section",
+   "fieldtype": "Column Break",
+   "label": "Workflow"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPrepared\nSent\nViewed\nPartially Signed\nCompleted\nDeclined\nExpired\nCancelled\nFailed"
+  },
+  {
+   "default": "Parallel",
+   "fieldname": "signing_mode",
+   "fieldtype": "Select",
+   "label": "Signing Mode",
+   "options": "Parallel\nSequential"
+  },
+  {
+   "default": "1",
+   "fieldname": "current_signing_order",
+   "fieldtype": "Int",
+   "label": "Current Signing Order"
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Datetime",
+   "label": "Expires On"
+  },
+  {
+   "fieldname": "completed_on",
+   "fieldtype": "Datetime",
+   "label": "Completed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_on",
+   "fieldtype": "Datetime",
+   "label": "Cancelled On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declined_on",
+   "fieldtype": "Datetime",
+   "label": "Declined On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "decline_reason",
+   "fieldtype": "Small Text",
+   "label": "Decline Reason"
+  },
+  {
+   "fieldname": "section_break_ahhb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "files_section",
+   "fieldtype": "Column Break",
+   "label": "Files"
+  },
+  {
+   "fieldname": "source_pdf",
+   "fieldtype": "Attach",
+   "label": "Source PDF"
+  },
+  {
+   "fieldname": "signed_pdf",
+   "fieldtype": "Attach",
+   "label": "Signed PDF"
+  },
+  {
+   "fieldname": "audit_certificate",
+   "fieldtype": "Attach",
+   "label": "Audit Certificate"
+  },
+  {
+   "fieldname": "certificate_signed_pdf",
+   "fieldtype": "Attach",
+   "label": "Certificate Signed PDF"
+  },
+  {
+   "fieldname": "section_break_zdzk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "hashes_section",
+   "fieldtype": "Column Break",
+   "label": "Hashes"
+  },
+  {
+   "fieldname": "source_pdf_hash",
+   "fieldtype": "Data",
+   "label": "Source PDF Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signed_pdf_hash",
+   "fieldtype": "Data",
+   "label": "Signed PDF Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_signed_pdf_hash",
+   "fieldtype": "Data",
+   "label": "Certificate Signed PDF Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "audit_chain_hash",
+   "fieldtype": "Data",
+   "label": "Audit Chain Hash",
+   "read_only": 1
+  },
+  {
+   "default": "Not Checked",
+   "fieldname": "tamper_status",
+   "fieldtype": "Select",
+   "label": "Tamper Status",
+   "options": "Not Checked\nPassed\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "options_section",
+   "fieldtype": "Section Break",
+   "label": "Options"
+  },
+  {
+   "default": "0",
+   "fieldname": "submit_source_on_completion",
+   "fieldtype": "Check",
+   "label": "Submit Source On Completion"
+  },
+  {
+   "default": "1",
+   "fieldname": "attach_signed_pdf_to_source",
+   "fieldtype": "Check",
+   "label": "Attach Signed PDF To Source"
+  },
+  {
+   "fieldname": "signers_section",
+   "fieldtype": "Section Break",
+   "label": "Signers"
+  },
+  {
+   "fieldname": "signers",
+   "fieldtype": "Table",
+   "label": "Signers",
+   "options": "Frappe Sign Signer"
+  },
+  {
+   "fieldname": "fields_section",
+   "fieldtype": "Section Break",
+   "label": "Fields"
+  },
+  {
+   "fieldname": "fields",
+   "fieldtype": "Table",
+   "label": "Fields",
+   "options": "Frappe Sign Field"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-07-07 12:16:07.504094",
+ "modified_by": "Administrator",
+ "module": "Frappe Sign",
+ "name": "Frappe Sign Request",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Frappe Sign Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Frappe Sign Sender",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Frappe Sign User",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1
+}

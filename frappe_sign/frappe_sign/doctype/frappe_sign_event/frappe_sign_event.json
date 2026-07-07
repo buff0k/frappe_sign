@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-07-07 12:15:56.042316",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "frappe_sign_request",
+  "event_type",
+  "signer_email",
+  "user",
+  "ip_address",
+  "user_agent",
+  "details_json",
+  "previous_hash",
+  "document_hash",
+  "timestamp"
+ ],
+ "fields": [
+  {
+   "fieldname": "frappe_sign_request",
+   "fieldtype": "Link",
+   "label": "Frappe Sign Request",
+   "options": "Frappe Sign Request"
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Select",
+   "label": "Event Type",
+   "options": "Created\nPrepared\nSent\nViewed\nSigned\nDeclined\nCompleted\nCancelled\nExpired\nPDF Generated\nPDF Stamped\nCertificate Generated\nTamper Check Passed\nTamper Check Failed\nPermission Denied\nCertificate Applied"
+  },
+  {
+   "fieldname": "signer_email",
+   "fieldtype": "Data",
+   "label": "Signer Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address"
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Small Text",
+   "label": "User Agent"
+  },
+  {
+   "fieldname": "details_json",
+   "fieldtype": "Code",
+   "label": "Details JSON",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "previous_hash",
+   "fieldtype": "Data",
+   "label": "Previous Hash"
+  },
+  {
+   "fieldname": "document_hash",
+   "fieldtype": "Data",
+   "label": "Document Hash"
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-07 12:21:42.954946",
+ "modified_by": "Administrator",
+ "module": "Frappe Sign",
+ "name": "Frappe Sign Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager"
+  },
+  {
+   "read": 1,
+   "role": "Frappe Sign Manager"
+  },
+  {
+   "read": 1,
+   "role": "Frappe Sign Sender"
+  },
+  {
+   "read": 1,
+   "role": "Frappe Sign User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

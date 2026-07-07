@@ -1,0 +1,54 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+
+<div class="frappe-sign frappe-sign-portal">
+    {% if invalid_token %}
+        <div class="frappe-sign-message frappe-sign-message-error">
+            <h2>Invalid signing link</h2>
+            <p>This signing link is invalid, expired, or has already been used.</p>
+        </div>
+    {% elif closed %}
+        <div class="frappe-sign-message">
+            <h2>Signing request closed</h2>
+            <p>This signing request is currently marked as {{ request_status }}.</p>
+        </div>
+    {% else %}
+        <div class="frappe-sign-header">
+            <h1>{{ request_title }}</h1>
+            <p>Please review the document and complete the required signing fields.</p>
+        </div>
+
+        <div
+            id="frappe-sign-root"
+            class="frappe-sign-root"
+            data-token="{{ token }}"
+            data-request="{{ request_name }}"
+            data-source-pdf="{{ source_pdf }}"
+        >
+            <div class="frappe-sign-toolbar">
+                <button class="btn btn-primary" id="frappe-sign-complete">
+                    Complete Signing
+                </button>
+
+                <button class="btn btn-default" id="frappe-sign-decline">
+                    Decline
+                </button>
+            </div>
+
+            <div id="frappe-sign-pdf-container" class="frappe-sign-pdf-container">
+                <p>Loading document...</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script src="/assets/frappe_sign/js/frappe_sign_portal.js"></script>
+{% endblock %}
+
+{% block style %}
+<link rel="stylesheet" href="/assets/frappe_sign/css/frappe_sign.css">
+{% endblock %}

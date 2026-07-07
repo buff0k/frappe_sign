@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-07-07 12:59:39.752648",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "frappe_sign_request",
+  "file_url",
+  "sha256_hash",
+  "hash_purpose",
+  "created_on",
+  "created_by",
+  "verified_on",
+  "verification_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "frappe_sign_request",
+   "fieldtype": "Link",
+   "label": "Frappe Sign Request",
+   "options": "Frappe Sign Request"
+  },
+  {
+   "fieldname": "file_url",
+   "fieldtype": "Attach",
+   "label": "File URL"
+  },
+  {
+   "fieldname": "sha256_hash",
+   "fieldtype": "Data",
+   "label": "SHA256 Hash"
+  },
+  {
+   "default": "Generated",
+   "fieldname": "hash_purpose",
+   "fieldtype": "Select",
+   "label": "Hash Purpose",
+   "options": "Generated\nPre-Sign\nPost-Sign\nCertificate\nVerification"
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On"
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Link",
+   "label": "Created By",
+   "options": "User"
+  },
+  {
+   "fieldname": "verified_on",
+   "fieldtype": "Datetime",
+   "label": "Verified On"
+  },
+  {
+   "default": "Not Checked",
+   "fieldname": "verification_status",
+   "fieldtype": "Select",
+   "label": "Verification Status",
+   "options": "Not Checked\nPassed\nFailed"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-07 13:03:15.394828",
+ "modified_by": "Administrator",
+ "module": "Frappe Sign",
+ "name": "Frappe Sign File Hash",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Frappe Sign Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Frappe Sign Sender",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Frappe Sign User",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1
+}

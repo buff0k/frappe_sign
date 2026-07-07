@@ -10,16 +10,65 @@ app_license = "mit"
 
 # required_apps = []
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "frappe_sign",
-# 		"logo": "/assets/frappe_sign/logo.png",
-# 		"title": "Frappe Sign",
-# 		"route": "/frappe_sign",
-# 		"has_permission": "frappe_sign.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+    {
+        "name": "frappe_sign",
+        "logo": "/assets/frappe_sign/images/desktop_icons/frappe_sign_icon.png",
+        "title": "Frappe Sign",
+        "route": "/frappe_sign",
+        "has_permission": "frappe_sign.api.permission.has_app_permission",
+    }
+]
+
+fixtures = [
+    {"dt": "Role", "filters": [["role_name", "in", [
+        "Frappe Sign User",
+        "Frappe Sign Sender",
+        "Frappe Sign Manager",
+    ]]]},
+    {"dt": "Custom Field", "filters": [["name", "in", [
+        "User-frappe_sign_section",
+        "User-frappe_sign_signature",
+        "User-frappe_sign_initials",
+        "User-frappe_sign_signature_type",
+        "User-frappe_sign_signature_consent",
+        "User-frappe_sign_signature_consent_on",
+        "User-frappe_sign_signature_hash",
+    ]]]}
+]
+
+doctype_js = {
+    "Frappe Sign Request": "public/js/frappe_sign_request.js",
+    "Frappe Sign Profile": "public/js/frappe_sign_profile.js",
+    "Frappe Sign Template": "public/js/frappe_sign_template.js",
+}
+
+permission_query_conditions = {
+    "Frappe Sign Request": "frappe_sign.permissions.frappe_sign_request_query",
+    "Frappe Sign Event": "frappe_sign.permissions.frappe_sign_event_query",
+    "Frappe Sign Profile": "frappe_sign.permissions.frappe_sign_profile_query",
+    "Frappe Sign Certificate": "frappe_sign.permissions.frappe_sign_certificate_query",
+    "Frappe Sign File Hash": "frappe_sign.permissions.frappe_sign_file_hash_query",
+}
+
+has_permission = {
+    "Frappe Sign Request": "frappe_sign.permissions.has_frappe_sign_request_permission",
+    "Frappe Sign Event": "frappe_sign.permissions.has_frappe_sign_event_permission",
+    "Frappe Sign Profile": "frappe_sign.permissions.has_frappe_sign_profile_permission",
+    "Frappe Sign Certificate": "frappe_sign.permissions.has_frappe_sign_certificate_permission",
+    "Frappe Sign File Hash": "frappe_sign.permissions.has_frappe_sign_file_hash_permission",
+}
+
+website_route_rules = [
+    {
+        "from_route": "/sign/<token>",
+        "to_route": "frappe_sign_portal",
+    },
+]
+
+app_include_css = [
+    "/assets/frappe_sign/css/frappe_sign.css",
+]
 
 # Includes in <head>
 # ------------------

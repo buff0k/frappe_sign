@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-07-07 11:43:24.552325",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "signer",
+  "signer_label",
+  "field_type",
+  "page",
+  "x_ratio",
+  "y_ratio",
+  "width_ratio",
+  "height_ratio",
+  "required",
+  "read_only",
+  "default_value",
+  "signed_value",
+  "signed_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "signer",
+   "fieldtype": "Data",
+   "label": "Signer"
+  },
+  {
+   "fieldname": "signer_label",
+   "fieldtype": "Data",
+   "label": "Signer Label"
+  },
+  {
+   "default": "Signature",
+   "fieldname": "field_type",
+   "fieldtype": "Select",
+   "label": "Field Type",
+   "options": "Signature\nInitials\nName\nEmail\nDate\nText\nCheckbox"
+  },
+  {
+   "default": "1",
+   "fieldname": "page",
+   "fieldtype": "Int",
+   "label": "Page"
+  },
+  {
+   "fieldname": "x_ratio",
+   "fieldtype": "Float",
+   "label": "X Ratio"
+  },
+  {
+   "fieldname": "y_ratio",
+   "fieldtype": "Float",
+   "label": "Y Ratio"
+  },
+  {
+   "fieldname": "width_ratio",
+   "fieldtype": "Float",
+   "label": "Width Ratio"
+  },
+  {
+   "fieldname": "height_ratio",
+   "fieldtype": "Float",
+   "label": "Height Ratio"
+  },
+  {
+   "default": "1",
+   "fieldname": "required",
+   "fieldtype": "Check",
+   "label": "Required"
+  },
+  {
+   "default": "0",
+   "fieldname": "read_only",
+   "fieldtype": "Check",
+   "label": "Read Only"
+  },
+  {
+   "fieldname": "default_value",
+   "fieldtype": "Data",
+   "label": "Default Value"
+  },
+  {
+   "fieldname": "signed_value",
+   "fieldtype": "Small Text",
+   "label": "Signed Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signed_on",
+   "fieldtype": "Datetime",
+   "label": "Signed On",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-07 11:51:12.775895",
+ "modified_by": "Administrator",
+ "module": "Frappe Sign",
+ "name": "Frappe Sign Field",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

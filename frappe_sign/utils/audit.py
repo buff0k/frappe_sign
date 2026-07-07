@@ -1,0 +1,84 @@
+# Copyright (c) 2026, BuFf0k and contributors
+# For license information, please see license.txt
+
+
+import hashlib
+import json
+
+import frappe
+from frappe.utils import now_datetime
+
+
+def sha256_bytes(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def sha256_text(value):
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def get_last_event_hash(request_name):
+    return frappe.db.get_value(
+        "Frappe Sign Event",
+        {"frappe_sign_request": request_name},
+        "event_hash",
+        order_by="creation desc",
+    )
+
+
+def append_event(
+    request_name,
+    event_type,
+    signer_email=None,
+    user=None,
+    details=None,
+    document_hash=None,
+):
+    user = user or frappe.session.user
+    details = details or {}
+
+    previous_hash = get_last_event_hash(request_name)
+    timestamp = now_datetime()
+
+    payload = {
+        "request": request_name,
+        "event_type": event_type,
+        "signer_email": signer_email,
+        "user": user,
+        "details": details,
+        "document_hash": document_hash,
+        "previous_hash": previous_hash,
+        "timestamp": str(timestamp),
+    }
+
+    event_hash = sha256_text(json.dumps(payload, sort_keys=True, default=str))
+
+    event = frappe.get_doc(
+        {
+            "doctype": "Frappe Sign Event",
+            "frappe_sign_request": request_name,
+            "event_type": event_type,
+            "signer_email": signer_email,
+            "user": user if user != "Guest" else None,
+            "ip_address": getattr(frappe.local, "request_ip", None),
+            "user_agent": frappe.get_request_header("User-Agent"),
+            "details_json": json.dumps(details, indent=2, default=str),
+            "previous_hash": previous_hash,
+            "event_hash": event_hash,
+            "document_hash": document_hash,
+            "timestamp": timestamp,
+        }
+    )
+
+    event.flags.ignore_permissions = True
+    event.insert()
+
+    frappe.db.set_value(
+        "Frappe Sign Request",
+        request_name,
+        "audit_chain_hash",
+        event_hash,
+        update_modified=False,
+    )
+
+    return event_hash

@@ -1,0 +1,76 @@
+{
+ "app": "frappe_sign",
+ "creation": "2026-07-07 10:48:27.654113",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "setting-gear",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Frappe Sign Settings",
+   "link_to": "Frappe Sign Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "signature",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Frappe Sign Request",
+   "link_to": "Frappe Sign Request",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "database-zap",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Frappe Sign Event",
+   "link_to": "Frappe Sign Event",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "circle-user-round",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Frappe Sign Profile",
+   "link_to": "Frappe Sign Profile",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "layout-template",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Frappe Sign Template",
+   "link_to": "Frappe Sign Template",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-07 12:54:16.587682",
+ "modified_by": "Administrator",
+ "module": "Core",
+ "name": "Frappe Sign",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Frappe Sign"
+}

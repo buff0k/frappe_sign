@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-07-07 11:53:20.849093",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "signing_configuration_section",
+  "internal_signers_only",
+  "allow_external_signers",
+  "require_login_for_internal_signers",
+  "default_expiry_days",
+  "default_reminder_days",
+  "section_break_pqem",
+  "security_section",
+  "require_signature_consent",
+  "append_audit_certificate",
+  "enable_tamper_detection",
+  "enable_certificate_based_pdf_signing",
+  "section_break_fwqe",
+  "certificate_section",
+  "certificate_file",
+  "certificate_password",
+  "certificate_location",
+  "source_documents_section",
+  "configured_doctypes"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "signing_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Signing Configuration"
+  },
+  {
+   "default": "1",
+   "fieldname": "internal_signers_only",
+   "fieldtype": "Check",
+   "label": "Internal Signers Only"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_external_signers",
+   "fieldtype": "Check",
+   "label": "Allow External Signers"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_login_for_internal_signers",
+   "fieldtype": "Check",
+   "label": "Require Login For Internal Signers"
+  },
+  {
+   "default": "7",
+   "fieldname": "default_expiry_days",
+   "fieldtype": "Int",
+   "label": "Default Expiry Days"
+  },
+  {
+   "default": "2",
+   "fieldname": "default_reminder_days",
+   "fieldtype": "Int",
+   "label": "Default Reminder Days"
+  },
+  {
+   "fieldname": "section_break_pqem",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "security_section",
+   "fieldtype": "Column Break",
+   "label": "Security"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_signature_consent",
+   "fieldtype": "Check",
+   "label": "Require Signature Consent"
+  },
+  {
+   "default": "1",
+   "fieldname": "append_audit_certificate",
+   "fieldtype": "Check",
+   "label": "Append Audit Certificate"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_tamper_detection",
+   "fieldtype": "Check",
+   "label": "Enable Tamper Detection"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_certificate_based_pdf_signing",
+   "fieldtype": "Check",
+   "label": "Enable Certificate Based PDF Signing"
+  },
+  {
+   "fieldname": "section_break_fwqe",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "certificate_section",
+   "fieldtype": "Column Break",
+   "label": "Certificate"
+  },
+  {
+   "fieldname": "certificate_file",
+   "fieldtype": "Attach",
+   "label": "Certificate File"
+  },
+  {
+   "fieldname": "certificate_password",
+   "fieldtype": "Password",
+   "label": "Certificate Password"
+  },
+  {
+   "fieldname": "certificate_location",
+   "fieldtype": "Data",
+   "label": "Certificate Reason"
+  },
+  {
+   "fieldname": "source_documents_section",
+   "fieldtype": "Section Break",
+   "label": "Source Documents"
+  },
+  {
+   "fieldname": "configured_doctypes",
+   "fieldtype": "Table",
+   "label": "Configured DocTypes",
+   "options": "Frappe Sign Source DocType"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-07-07 12:00:50.387106",
+ "modified_by": "Administrator",
+ "module": "Frappe Sign",
+ "name": "Frappe Sign Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Frappe Sign Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Frappe Sign Sender"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1
+}

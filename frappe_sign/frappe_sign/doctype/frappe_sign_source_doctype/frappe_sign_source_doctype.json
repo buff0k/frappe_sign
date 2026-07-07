@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-07-07 11:29:27.191493",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_doctype",
+  "default_print_format",
+  "enabled",
+  "allow_submit_source_on_completion",
+  "attach_signed_pdf_to_source",
+  "allow_external_signers",
+  "required_sender_role",
+  "require_template",
+  "default_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "Source DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "default_print_format",
+   "fieldtype": "Link",
+   "label": "Default Print Format",
+   "options": "Print Format"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_submit_source_on_completion",
+   "fieldtype": "Check",
+   "label": "Allow Submit Source On Completion"
+  },
+  {
+   "default": "1",
+   "fieldname": "attach_signed_pdf_to_source",
+   "fieldtype": "Check",
+   "label": "Attach Signed PDF To Source"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_external_signers",
+   "fieldtype": "Check",
+   "label": "Allow External Signers"
+  },
+  {
+   "fieldname": "required_sender_role",
+   "fieldtype": "Link",
+   "label": "Required Sender Role",
+   "options": "Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_template",
+   "fieldtype": "Check",
+   "label": "Require Template"
+  },
+  {
+   "fieldname": "default_template",
+   "fieldtype": "Link",
+   "label": "Default Template",
+   "options": "Frappe Sign Template"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-07 12:53:30.382233",
+ "modified_by": "Administrator",
+ "module": "Frappe Sign",
+ "name": "Frappe Sign Source DocType",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
