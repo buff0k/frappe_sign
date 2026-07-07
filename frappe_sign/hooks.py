@@ -57,7 +57,11 @@ website_route_rules = [
     {
         "from_route": "/sign/<token>",
         "to_route": "frappe_sign_portal",
-    }
+    },
+    {
+        "from_route": "/frappe-sign-portal",
+        "to_route": "frappe_sign_portal",
+    },
 ]
 
 app_include_css = [

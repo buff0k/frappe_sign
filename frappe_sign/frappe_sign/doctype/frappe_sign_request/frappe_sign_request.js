@@ -39,9 +39,11 @@ frappe.ui.form.on("Frappe Sign Request", {
 
         if (["Draft", "Prepared"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Open Designer"), () => {
-                frappe.set_route("frappe-sign-designer", {
+                frappe.route_options = {
                     request: frm.doc.name,
-                });
+                };
+
+                frappe.set_route("frappe-sign-designer");
             }, __("Frappe Sign"));
 
             frm.add_custom_button(__("Send Request"), async () => {

@@ -1,18 +1,13 @@
 # Copyright (c) 2026, BuFf0k and contributors
 # For license information, please see license.txt
 
-
 import frappe
 
 from frappe_sign.utils.tokens import hash_signing_token
 
 
 def get_context(context):
-    token = (
-        frappe.form_dict.get("token")
-        or getattr(context, "token", None)
-        or frappe.form_dict.get("route")
-    )
+    token = get_token_from_request(context)
 
     context.no_cache = 1
     context.show_sidebar = False
@@ -54,3 +49,18 @@ def get_context(context):
     context.source_pdf = request.source_pdf
 
     return context
+
+
+def get_token_from_request(context):
+    if frappe.form_dict.get("token"):
+        return frappe.form_dict.get("token")
+
+    if getattr(context, "token", None):
+        return context.token
+
+    route = frappe.local.request.path.strip("/")
+
+    if route.startswith("sign/"):
+        return route.split("sign/", 1)[1]
+
+    return None

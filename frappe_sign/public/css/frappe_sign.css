@@ -7,7 +7,11 @@
     --frappe-sign-border: #d1d8dd;
     --frappe-sign-muted-bg: #f7f7f7;
     --frappe-sign-card-bg: #ffffff;
-    --frappe-sign-danger: #ff5858;
+    --frappe-sign-danger: #e24c4b;
+    --frappe-sign-primary: #2490ef;
+    --frappe-sign-success: #2e9d64;
+    --frappe-sign-warning: #b7791f;
+    --frappe-sign-text-muted: #6b7280;
 
     max-width: 1100px;
     margin: 0 auto;
@@ -51,7 +55,7 @@
     border-color: var(--frappe-sign-danger);
 }
 
-/* Toolbar
+/* Shared toolbar
    ========================================================================== */
 
 .frappe-sign-toolbar {
@@ -68,7 +72,7 @@
     align-items: center;
 }
 
-/* PDF / document canvas area
+/* Portal / signing document canvas area
    ========================================================================== */
 
 .frappe-sign-pdf-container {
@@ -77,14 +81,6 @@
     border-radius: 8px;
     padding: 16px;
     min-height: 600px;
-}
-
-.frappe-sign-pdf-page {
-    position: relative;
-    margin: 0 auto 24px;
-    background: #ffffff;
-    border: 1px solid var(--frappe-sign-border);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .frappe-sign-field {
@@ -118,83 +114,24 @@
     overflow-x: auto;
 }
 
-/* Designer
-   ========================================================================== */
-
-.frappe-sign-designer {
-    max-width: none;
-}
-
-.frappe-sign-designer-layout {
-    display: grid;
-    grid-template-columns: 320px minmax(0, 1fr);
-    gap: 16px;
-}
-
-.frappe-sign-designer-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.frappe-sign-card {
-    background: var(--frappe-sign-card-bg, #ffffff);
-    border: 1px solid var(--frappe-sign-border, #d1d8dd);
-    border-radius: 8px;
-    padding: 16px;
-}
-
-.frappe-sign-card h4 {
-    margin-top: 0;
-}
-
-.frappe-sign-designer-main {
-    min-width: 0;
-}
-
-.frappe-sign-pdf-frame {
-    width: 100%;
-    min-height: 780px;
-    border: 0;
-    background: #ffffff;
-}
-
-.frappe-sign-field-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--frappe-sign-border, #d1d8dd);
-}
-
-.frappe-sign-field-row:last-child {
-    border-bottom: 0;
-}
-
 /* ==========================================================================
    Frappe Sign Designer
    ========================================================================== */
 
-.frappe-sign {
-    --frappe-sign-border: #d1d8dd;
-    --frappe-sign-muted-bg: #f7f7f7;
-    --frappe-sign-card-bg: #ffffff;
-    --frappe-sign-primary: #2490ef;
-    --frappe-sign-success: #2e9d64;
-    --frappe-sign-danger: #e24c4b;
-    --frappe-sign-text-muted: #6b7280;
-}
-
-.frappe-sign-designer {
+.frappe-sign.frappe-sign-designer {
     max-width: none;
+    width: 100%;
+    margin: 0;
     padding: 0;
 }
+
+/* Designer toolbar
+   ========================================================================== */
 
 .frappe-sign-designer-toolbar {
     position: sticky;
     top: 0;
-    z-index: 30;
+    z-index: 50;
     background: var(--frappe-sign-card-bg);
     border: 1px solid var(--frappe-sign-border);
     border-radius: 8px;
@@ -206,6 +143,13 @@
     align-items: center;
 }
 
+.frappe-sign-toolbar-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .frappe-sign-zoom-controls {
     display: flex;
     align-items: center;
@@ -215,14 +159,18 @@
 #frappe-sign-zoom-label {
     min-width: 48px;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
 }
+
+/* Designer layout
+   ========================================================================== */
 
 .frappe-sign-designer-layout {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr) 150px;
+    grid-template-columns: 280px minmax(520px, 1fr) 180px;
     gap: 12px;
     align-items: start;
+    width: 100%;
 }
 
 .frappe-sign-left-panel,
@@ -232,9 +180,22 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-height: calc(100vh - 90px);
+    max-height: calc(100vh - 96px);
     overflow: auto;
 }
+
+.frappe-sign-document-panel {
+    min-width: 0;
+    background: #eef1f5;
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    padding: 18px;
+    height: calc(100vh - 120px);
+    overflow: auto;
+}
+
+/* Cards
+   ========================================================================== */
 
 .frappe-sign-card {
     background: var(--frappe-sign-card-bg);
@@ -249,10 +210,20 @@
     font-weight: 700;
 }
 
-.frappe-sign-muted {
+.frappe-sign-muted,
+.frappe-sign-help {
     color: var(--frappe-sign-text-muted);
     font-size: 12px;
 }
+
+.frappe-sign-warning {
+    color: var(--frappe-sign-warning);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Field palette
+   ========================================================================== */
 
 .frappe-sign-field-palette {
     display: grid;
@@ -260,6 +231,9 @@
 }
 
 .frappe-sign-palette-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     border: 1px solid var(--frappe-sign-border);
     border-radius: 6px;
     background: #f8fafc;
@@ -269,24 +243,32 @@
     font-weight: 600;
 }
 
-.frappe-sign-palette-item:hover {
+.frappe-sign-palette-item:hover,
+.frappe-sign-palette-item.active {
     border-color: var(--frappe-sign-primary);
     background: #eef6ff;
 }
 
-.frappe-sign-palette-item:active {
-    cursor: grabbing;
+.frappe-sign-palette-item.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
-.frappe-sign-document-panel {
-    min-width: 0;
-    background: #eef1f5;
-    border: 1px solid var(--frappe-sign-border);
-    border-radius: 8px;
-    padding: 18px;
-    max-height: calc(100vh - 120px);
-    overflow: auto;
+.frappe-sign-palette-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--frappe-sign-primary);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 1;
 }
+
+/* PDF rendering
+   ========================================================================== */
 
 .frappe-sign-pdf-pages {
     display: flex;
@@ -326,25 +308,35 @@
     position: absolute;
     inset: 0;
     z-index: 5;
+    cursor: crosshair;
 }
+
+/* Placed designer fields
+   ========================================================================== */
 
 .frappe-sign-field-box {
     position: absolute;
-    z-index: 10;
+    z-index: 20;
     border: 2px solid var(--frappe-sign-primary);
     background: rgba(36, 144, 239, 0.12);
     border-radius: 4px;
     padding: 4px;
     cursor: move;
-    overflow: hidden;
+    overflow: visible;
     min-width: 24px;
     min-height: 24px;
+    box-sizing: border-box;
+}
+
+.frappe-sign-field-box.active {
+    box-shadow: 0 0 0 3px rgba(36, 144, 239, 0.22);
 }
 
 .frappe-sign-field-box-label {
     font-size: 11px;
     font-weight: 700;
     line-height: 1.1;
+    pointer-events: none;
 }
 
 .frappe-sign-field-box-signer {
@@ -354,14 +346,15 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    pointer-events: none;
 }
 
 .frappe-sign-field-remove {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 18px;
-    height: 18px;
+    top: -9px;
+    right: -9px;
+    width: 20px;
+    height: 20px;
     border: 0;
     border-radius: 50%;
     background: var(--frappe-sign-danger);
@@ -370,18 +363,23 @@
     line-height: 18px;
     padding: 0;
     cursor: pointer;
+    z-index: 30;
 }
 
 .frappe-sign-resize-handle {
     position: absolute;
     right: 0;
     bottom: 0;
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     background: var(--frappe-sign-primary);
     cursor: nwse-resize;
     border-top-left-radius: 4px;
+    z-index: 30;
 }
+
+/* Page thumbnails
+   ========================================================================== */
 
 .frappe-sign-page-thumbnails {
     display: grid;
@@ -399,7 +397,8 @@
     font-weight: 600;
 }
 
-.frappe-sign-page-thumb:hover {
+.frappe-sign-page-thumb:hover,
+.frappe-sign-page-thumb.active {
     border-color: var(--frappe-sign-primary);
     background: #eef6ff;
 }
@@ -411,6 +410,9 @@
     border: 1px solid #e5e7eb;
 }
 
+/* Field list
+   ========================================================================== */
+
 .frappe-sign-field-row {
     display: flex;
     align-items: center;
@@ -418,8 +420,55 @@
     gap: 6px;
     padding: 8px 0;
     border-bottom: 1px solid var(--frappe-sign-border);
+    cursor: pointer;
 }
 
 .frappe-sign-field-row:last-child {
     border-bottom: 0;
+}
+
+.frappe-sign-field-row:hover {
+    background: #f8fafc;
+}
+
+/* Drag ghost
+   ========================================================================== */
+
+.frappe-sign-drag-ghost {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: none;
+    border: 2px solid var(--frappe-sign-primary);
+    background: rgba(36, 144, 239, 0.16);
+    color: #0f172a;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Responsive fallback
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+    .frappe-sign-designer-layout {
+        grid-template-columns: 260px minmax(420px, 1fr) 150px;
+    }
+}
+
+@media (max-width: 992px) {
+    .frappe-sign-designer-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .frappe-sign-left-panel,
+    .frappe-sign-right-panel {
+        position: static;
+        max-height: none;
+    }
+
+    .frappe-sign-document-panel {
+        height: auto;
+        max-height: none;
+    }
 }

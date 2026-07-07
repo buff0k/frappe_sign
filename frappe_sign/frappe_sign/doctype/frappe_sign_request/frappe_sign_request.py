@@ -173,6 +173,81 @@ class FrappeSignRequest(Document):
             if not field.signer and field.field_type in ("Signature", "Initials"):
                 frappe.throw("Signature and Initials fields must be assigned to a signer.")
 
+    def validate_locked_request(self):
+        if self.is_new():
+            return
+
+        old = self.get_doc_before_save()
+
+        if not old:
+            return
+
+        if old.status not in (
+            "Sent",
+            "Viewed",
+            "Partially Signed",
+            "Completed",
+            "Declined",
+            "Expired",
+            "Cancelled",
+            "Failed",
+        ):
+            return
+
+        locked_fields = [
+            "source_type",
+            "source_doctype",
+            "source_name",
+            "print_format",
+            "source_pdf",
+        ]
+
+        for fieldname in locked_fields:
+            if self.get(fieldname) != old.get(fieldname):
+                frappe.throw(
+                    f"{frappe.unscrub(fieldname)} cannot be changed after the request has been sent."
+                )
+
+        if self.fields_have_changed(old):
+            frappe.throw("Signing fields cannot be changed after the request has been sent.")
+
+    def fields_have_changed(self, old):
+        current_fields = [
+            {
+                "signer": row.signer,
+                "signer_label": row.signer_label,
+                "field_type": row.field_type,
+                "page": row.page,
+                "x_ratio": row.x_ratio,
+                "y_ratio": row.y_ratio,
+                "width_ratio": row.width_ratio,
+                "height_ratio": row.height_ratio,
+                "required": row.required,
+                "read_only": row.read_only,
+                "default_value": row.default_value,
+            }
+            for row in self.fields
+        ]
+
+        old_fields = [
+            {
+                "signer": row.signer,
+                "signer_label": row.signer_label,
+                "field_type": row.field_type,
+                "page": row.page,
+                "x_ratio": row.x_ratio,
+                "y_ratio": row.y_ratio,
+                "width_ratio": row.width_ratio,
+                "height_ratio": row.height_ratio,
+                "required": row.required,
+                "read_only": row.read_only,
+                "default_value": row.default_value,
+            }
+            for row in old.fields
+        ]
+
+        return current_fields != old_fields
+
     def mark_failed(self, message):
         self.status = "Failed"
         self.add_comment("Comment", message)
@@ -203,68 +278,3 @@ def make_unique_request_name(base_name):
             return candidate
 
         counter += 1
-
-
-def validate_locked_request(self):
-    if self.is_new():
-        return
-
-    old = self.get_doc_before_save()
-
-    if not old:
-        return
-
-    if old.status not in ("Sent", "Viewed", "Partially Signed", "Completed", "Declined", "Expired", "Cancelled", "Failed"):
-        return
-
-    locked_fields = [
-        "source_type",
-        "source_doctype",
-        "source_name",
-        "print_format",
-        "source_pdf",
-    ]
-
-    for fieldname in locked_fields:
-        if self.get(fieldname) != old.get(fieldname):
-            frappe.throw(f"{frappe.unscrub(fieldname)} cannot be changed after the request has been sent.")
-
-    if self.fields_have_changed(old):
-        frappe.throw("Signing fields cannot be changed after the request has been sent.")
-
-def fields_have_changed(self, old):
-    current_fields = [
-        {
-            "signer": row.signer,
-            "signer_label": row.signer_label,
-            "field_type": row.field_type,
-            "page": row.page,
-            "x_ratio": row.x_ratio,
-            "y_ratio": row.y_ratio,
-            "width_ratio": row.width_ratio,
-            "height_ratio": row.height_ratio,
-            "required": row.required,
-            "read_only": row.read_only,
-            "default_value": row.default_value,
-        }
-        for row in self.fields
-    ]
-
-    old_fields = [
-        {
-            "signer": row.signer,
-            "signer_label": row.signer_label,
-            "field_type": row.field_type,
-            "page": row.page,
-            "x_ratio": row.x_ratio,
-            "y_ratio": row.y_ratio,
-            "width_ratio": row.width_ratio,
-            "height_ratio": row.height_ratio,
-            "required": row.required,
-            "read_only": row.read_only,
-            "default_value": row.default_value,
-        }
-        for row in old.fields
-    ]
-
-    return current_fields != old_fields

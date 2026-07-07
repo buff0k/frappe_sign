@@ -282,7 +282,7 @@ def get_source_config(settings, doctype):
 
 
 def send_signing_email(request, signer, token):
-    signing_url = get_url(f"/frappe-sign-portal?token={token}")
+    signing_url = get_signing_url(token)
 
     subject = f"Signature requested: {request.request_title}"
 
@@ -379,3 +379,7 @@ def validate_ready_to_send(request):
 
             if value < 0 or value > 1:
                 frappe.throw(f"{ratio_field} must be between 0 and 1.")
+
+
+def get_signing_url(token):
+    return get_url(f"/sign/{token}")
