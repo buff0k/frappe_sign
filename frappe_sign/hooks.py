@@ -37,12 +37,6 @@ fixtures = [
     ]]]}
 ]
 
-doctype_js = {
-    "Frappe Sign Request": "public/js/frappe_sign_request.js",
-    "Frappe Sign Profile": "public/js/frappe_sign_profile.js",
-    "Frappe Sign Template": "public/js/frappe_sign_template.js",
-}
-
 permission_query_conditions = {
     "Frappe Sign Request": "frappe_sign.permissions.frappe_sign_request_query",
     "Frappe Sign Event": "frappe_sign.permissions.frappe_sign_event_query",
