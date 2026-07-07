@@ -183,3 +183,16 @@ def _has_linked_request_permission(doc, link_field, user=None, permission_type=N
 
     request = frappe.get_doc("Frappe Sign Request", request_name)
     return has_frappe_sign_request_permission(request, user=user, permission_type="read")
+
+
+def has_app_permission():
+    roles = set(frappe.get_roles())
+    return bool(
+        roles
+        & {
+            "System Manager",
+            "Frappe Sign Manager",
+            "Frappe Sign Sender",
+            "Frappe Sign User",
+        }
+    )

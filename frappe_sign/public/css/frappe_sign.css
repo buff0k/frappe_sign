@@ -117,3 +117,57 @@
 .frappe-sign-portal .frappe-sign-pdf-container {
     overflow-x: auto;
 }
+
+/* Designer
+   ========================================================================== */
+
+.frappe-sign-designer {
+    max-width: none;
+}
+
+.frappe-sign-designer-layout {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 16px;
+}
+
+.frappe-sign-designer-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.frappe-sign-card {
+    background: var(--frappe-sign-card-bg, #ffffff);
+    border: 1px solid var(--frappe-sign-border, #d1d8dd);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.frappe-sign-card h4 {
+    margin-top: 0;
+}
+
+.frappe-sign-designer-main {
+    min-width: 0;
+}
+
+.frappe-sign-pdf-frame {
+    width: 100%;
+    min-height: 780px;
+    border: 0;
+    background: #ffffff;
+}
+
+.frappe-sign-field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--frappe-sign-border, #d1d8dd);
+}
+
+.frappe-sign-field-row:last-child {
+    border-bottom: 0;
+}
