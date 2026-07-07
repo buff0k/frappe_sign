@@ -472,3 +472,62 @@
         max-height: none;
     }
 }
+
+/* Portal signing fields
+   ========================================================================== */
+
+.frappe-sign-portal {
+    max-width: 1200px;
+}
+
+.frappe-sign-portal .frappe-sign-pdf-container {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.frappe-sign-signing-field {
+    position: absolute;
+    z-index: 20;
+    border: 2px solid var(--frappe-sign-primary);
+    background: rgba(36, 144, 239, 0.12);
+    border-radius: 4px;
+    padding: 4px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.frappe-sign-signing-field.clickable {
+    cursor: pointer;
+}
+
+.frappe-sign-signing-field.completed {
+    border-color: var(--frappe-sign-success);
+    background: rgba(46, 157, 100, 0.14);
+}
+
+.frappe-sign-signing-field-label {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.frappe-sign-signing-field-value {
+    font-size: 12px;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.frappe-sign-inline-input {
+    width: 100%;
+    height: 100%;
+    min-height: 24px;
+    padding: 2px 4px;
+}
+
+.frappe-sign-inline-checkbox {
+    width: 18px;
+    height: 18px;
+}

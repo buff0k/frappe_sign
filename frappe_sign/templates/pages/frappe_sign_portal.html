@@ -24,7 +24,6 @@
             class="frappe-sign-root"
             data-token="{{ token }}"
             data-request="{{ request_name }}"
-            data-source-pdf="{{ source_pdf }}"
         >
             <div class="frappe-sign-toolbar">
                 <button class="btn btn-primary" id="frappe-sign-complete">
@@ -46,6 +45,12 @@
 {% endblock %}
 
 {% block script %}
+<script src="/assets/frappe_sign/js/pdfjs/pdf.min.js"></script>
+<script>
+    if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/assets/frappe_sign/js/pdfjs/pdf.worker.min.js";
+    }
+</script>
 <script src="/assets/frappe_sign/js/frappe_sign_portal.js"></script>
 {% endblock %}
 

@@ -211,3 +211,23 @@ def _refresh_request_status(request):
     else:
         request.status = "Partially Signed"
         request.save(ignore_permissions=True)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_source_pdf(token):
+    request, signer = get_request_and_signer_from_token(token)
+
+    if not request or not signer:
+        frappe.throw("Invalid or expired signing token.")
+
+    if not request.source_pdf:
+        frappe.throw("No source PDF is attached to this signing request.")
+
+    from frappe_sign.utils.files import get_file_bytes
+
+    pdf_bytes = get_file_bytes(request.source_pdf)
+
+    frappe.local.response.filename = f"{request.name}.pdf"
+    frappe.local.response.filecontent = pdf_bytes
+    frappe.local.response.type = "download"
+    frappe.local.response.display_content_as = "inline"
