@@ -15,6 +15,13 @@ frappe.ui.form.on("Frappe Sign Request", {
         frm.trigger("set_indicators");
         frm.trigger("add_actions");
         frm.trigger("lock_completed_request");
+        if (frm.doc.status === "Completed") {
+            frm.add_custom_button(__("Evidence Certificates"), () => {
+                frappe.set_route("List", "Frappe Sign Certificate", {
+                    frappe_sign_request: frm.doc.name,
+                });
+            }, __("View"));
+        }
     },
 
     before_save(frm) {

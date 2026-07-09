@@ -272,56 +272,12 @@ def verify_tamper_status(request_name):
     if not frappe.has_permission("Frappe Sign Request", "read", doc=request):
         frappe.throw("You do not have permission to verify this request.")
 
-    settings = frappe.get_single("Frappe Sign Settings")
+    from frappe_sign.utils.tamper import verify_request_tamper_status
 
-    if not settings.enable_tamper_detection:
-        return {
-            "tamper_status": "Disabled",
-            "message": "Tamper detection is disabled in Frappe Sign Settings.",
-        }
-
-    failed = False
-
-    if request.source_pdf and request.source_pdf_hash:
-        current_source_hash = sha256_bytes(get_file_bytes(request.source_pdf))
-
-        if current_source_hash != request.source_pdf_hash:
-            failed = True
-
-    if request.signed_pdf and request.signed_pdf_hash:
-        current_signed_hash = sha256_bytes(get_file_bytes(request.signed_pdf))
-
-        if current_signed_hash != request.signed_pdf_hash:
-            failed = True
-
-    if request.audit_certificate:
-        latest_certificate_hash = get_latest_file_hash(
-            request.name,
-            request.audit_certificate,
-            "Certificate",
-        )
-
-        if latest_certificate_hash:
-            current_certificate_hash = sha256_bytes(get_file_bytes(request.audit_certificate))
-
-            if current_certificate_hash != latest_certificate_hash:
-                failed = True
-
-    if request.certificate_signed_pdf and request.certificate_signed_pdf_hash:
-        current_certificate_signed_hash = sha256_bytes(get_file_bytes(request.certificate_signed_pdf))
-
-        if current_certificate_signed_hash != request.certificate_signed_pdf_hash:
-            failed = True
-
-    request.tamper_status = "Failed" if failed else "Passed"
-    request.save(ignore_permissions=True)
-
-    append_event(
-        request.name,
-        "Tamper Check Failed" if failed else "Tamper Check Passed",
+    return verify_request_tamper_status(
+        request_name=request.name,
+        triggered_by="Manual",
     )
-
-    return {"tamper_status": request.tamper_status}
 
 
 def get_latest_file_hash(request_name, file_url, hash_purpose=None):

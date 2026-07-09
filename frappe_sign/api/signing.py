@@ -13,15 +13,13 @@ from frappe_sign.api.request import create_file_hash
 from frappe_sign.utils.audit import append_event, sha256_bytes
 from frappe_sign.utils.certificates import generate_audit_certificate
 from frappe_sign.utils.files import attach_private_file, get_file_bytes
-from frappe_sign.utils.notifications import (
-    send_completion_notification,
-    send_progress_notification,
-)
+from frappe_sign.utils.notifications import send_completion_notification, send_progress_notification
 from frappe_sign.utils.pdf_stamping import stamp_pdf_fields
 from frappe_sign.utils.signatures import attach_signature_png
 from frappe_sign.utils.tokens import hash_signing_token
 from frappe_sign.utils.pdf_merge import append_pdf_bytes
 from frappe_sign.utils.pdf_digital_signing import digitally_sign_pdf
+from frappe_sign.utils.certificate_records import create_audit_certificate_record, create_final_verification_package_record
 
 
 OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
@@ -690,13 +688,33 @@ def complete_request_with_audit_certificate(request):
         document_hash=final_certificate["sha256_hash"],
     )
 
+    request.reload()
+
+    create_audit_certificate_record(
+        request.name,
+        audit_certificate_hash=final_certificate["sha256_hash"],
+    )
+
+    audit_appended = False
+    digitally_signed = False
+
     if settings.append_audit_certificate:
         apply_audit_certificate_to_signed_pdf(request.name)
+        audit_appended = True
 
     if settings.enable_certificate_based_pdf_signing:
         apply_digital_signature_to_final_pdf(request.name)
+        digitally_signed = True
 
     request.reload()
+
+    if request.certificate_signed_pdf:
+        create_final_verification_package_record(
+            request.name,
+            audit_appended=audit_appended,
+            digitally_signed=digitally_signed,
+        )
+
     send_completion_notification(request)
 
     submit_completed_request(request.name)

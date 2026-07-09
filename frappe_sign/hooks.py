@@ -76,5 +76,6 @@ standard_portal_menu_items = [
 scheduler_events = {
     "daily": [
         "frappe_sign.utils.notifications.send_daily_signing_reminders",
+        "frappe_sign.utils.tamper.run_scheduled_tamper_checks",
     ],
 }

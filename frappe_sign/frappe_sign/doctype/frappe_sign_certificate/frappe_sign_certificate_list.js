@@ -1,69 +1,54 @@
 // Copyright (c) 2026, BuFf0k and contributors
 // For license information, please see license.txt
 
-frappe.listview_settings["Frappe Sign Request"] = {
-    has_indicator_for_draft: true,
+frappe.listview_settings["Frappe Sign Certificate"] = {
+    has_indicator_for_draft: false,
 
     add_fields: [
-        "status",
-        "signing_mode",
-        "current_signing_order",
-        "expires_on",
-        "completed_on",
-        "declined_on",
+        "frappe_sign_request",
+        "certificate_type",
         "tamper_status",
-        "signed_pdf",
-        "audit_certificate",
-        "certificate_signed_pdf",
-        "docstatus",
+        "generated_on",
+        "digitally_signed",
+        "audit_certificate_url",
+        "final_pdf_url",
     ],
 
     get_indicator(doc) {
-        const status = doc.status || "Draft";
+        const tamper_status = doc.tamper_status || "Not Checked";
 
-        const status_map = {
-            "Draft": "gray",
-            "Prepared": "blue",
-            "Sent": "orange",
-            "Viewed": "yellow",
-            "Partially Signed": "purple",
-            "Completed": "green",
-            "Declined": "red",
-            "Expired": "red",
-            "Cancelled": "gray",
+        const tamper_map = {
+            "Passed": "green",
             "Failed": "red",
+            "Not Checked": "yellow",
         };
 
         return [
-            __(status),
-            status_map[status] || "gray",
-            `status,=,${status}`,
+            __(tamper_status),
+            tamper_map[tamper_status] || "gray",
+            `tamper_status,=,${tamper_status}`,
         ];
     },
 
     formatters: {
-        status(value) {
-            if (!value) {
-                return "";
-            }
-
-            return __(value);
-        },
-
         tamper_status(value) {
             return render_tamper_status(value);
         },
 
-        signed_pdf(value) {
+        audit_certificate_url(value) {
             return render_file_view_button(value, __("View"));
         },
 
-        audit_certificate(value) {
+        final_pdf_url(value) {
             return render_file_view_button(value, __("View"));
         },
 
-        certificate_signed_pdf(value) {
-            return render_file_view_button(value, __("View"));
+        digitally_signed(value) {
+            if (cint(value)) {
+                return `<span class="indicator-pill green">${__("Yes")}</span>`;
+            }
+
+            return `<span class="indicator-pill gray">${__("No")}</span>`;
         },
     },
 };

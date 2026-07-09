@@ -65,6 +65,8 @@ def validate_signed_pdf_bytes(pdf_bytes):
         "status": "valid" if valid else "failed",
         "uploaded_pdf_hash": uploaded_hash,
         "uploaded_document_type": match["document_type"],
+        "matched_by": match.get("matched_by"),
+        "certificate_record": match.get("certificate_record"),
         "request": build_request_summary(request),
         "signers": build_signer_summary(request),
         "stored_pdf_check": document_check,
@@ -128,6 +130,48 @@ def find_request_by_document_hash(pdf_hash):
             "request_name": request_name,
             "document_type": "certificate_signed_pdf",
             "matched_by": "Frappe Sign Request.certificate_signed_pdf_hash",
+        }
+
+    certificate_record = frappe.db.get_value(
+        "Frappe Sign Certificate",
+        {
+            "signed_pdf_hash": pdf_hash,
+        },
+        [
+            "frappe_sign_request",
+            "name",
+        ],
+        order_by="creation desc",
+        as_dict=True,
+    )
+
+    if certificate_record:
+        return {
+            "request_name": certificate_record.frappe_sign_request,
+            "document_type": "signed_pdf",
+            "matched_by": "Frappe Sign Certificate.signed_pdf_hash",
+            "certificate_record": certificate_record.name,
+        }
+
+    certificate_record = frappe.db.get_value(
+        "Frappe Sign Certificate",
+        {
+            "final_pdf_hash": pdf_hash,
+        },
+        [
+            "frappe_sign_request",
+            "name",
+        ],
+        order_by="creation desc",
+        as_dict=True,
+    )
+
+    if certificate_record:
+        return {
+            "request_name": certificate_record.frappe_sign_request,
+            "document_type": "certificate_signed_pdf",
+            "matched_by": "Frappe Sign Certificate.final_pdf_hash",
+            "certificate_record": certificate_record.name,
         }
 
     file_hash = frappe.db.get_value(
