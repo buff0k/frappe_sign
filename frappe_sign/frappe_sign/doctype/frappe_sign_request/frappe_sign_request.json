@@ -201,13 +201,13 @@
   {
    "fieldname": "audit_certificate",
    "fieldtype": "Attach",
+   "in_list_view": 1,
    "label": "Audit Certificate",
    "read_only": 1
   },
   {
    "fieldname": "certificate_signed_pdf",
    "fieldtype": "Attach",
-   "in_list_view": 1,
    "label": "Certificate Signed PDF",
    "read_only": 1
   },
@@ -310,7 +310,7 @@
    "link_fieldname": "frappe_sign_request"
   }
  ],
- "modified": "2026-07-09 10:25:09.348441",
+ "modified": "2026-07-09 11:38:05.152314",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Request",
