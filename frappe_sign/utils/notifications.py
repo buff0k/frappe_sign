@@ -16,15 +16,6 @@ CLOSED_REQUEST_STATUSES = ("Completed", "Declined", "Expired", "Cancelled", "Fai
 
 
 def get_current_notification_signers(request):
-    """
-    Signers who should receive signing-link mail right now.
-
-    Parallel:
-        all open signers
-
-    Sequential:
-        only open signers at current_signing_order
-    """
     signers = [
         row
         for row in request.signers
@@ -79,15 +70,6 @@ def send_signing_request_email(request, signer, signing_link, reminder=False):
 
 
 def send_progress_notification(request, completed_signer, action, reason=None):
-    """
-    Notify the creator and relevant remaining signers after a signer signs or declines.
-
-    Signed:
-        creator + currently eligible remaining signers.
-
-    Declined:
-        creator + all other signers, because the request is closed.
-    """
     recipients = get_progress_recipients(request, completed_signer, action)
 
     if not recipients:
@@ -186,29 +168,24 @@ def build_next_signer_links(request):
 
 
 def send_completion_notification(request):
-    """
-    Send final signed PDF and audit certificate to creator and all signers.
-    """
     recipients = get_completion_recipients(request)
 
     if not recipients:
         return
 
-    attachments = []
-
-    if request.signed_pdf:
-        attachments.append(get_email_attachment(request.signed_pdf, "signed-document.pdf"))
-
-    if request.audit_certificate:
-        attachments.append(get_email_attachment(request.audit_certificate, "audit-certificate.pdf"))
-
+    attachments = get_completion_attachments(request)
     escaped_title = frappe.utils.escape_html(request.request_title or request.name)
+
+    if request.certificate_signed_pdf:
+        attachment_text = "The final verification PDF is attached."
+    else:
+        attachment_text = "The signed PDF and audit certificate are attached."
 
     message = f"""
         <p>Hello,</p>
         <p>The following Frappe Sign request has been fully signed:</p>
         <p><strong>{escaped_title}</strong></p>
-        <p>The signed PDF and audit certificate are attached.</p>
+        <p>{frappe.utils.escape_html(attachment_text)}</p>
     """
 
     frappe.sendmail(
@@ -218,6 +195,27 @@ def send_completion_notification(request):
         attachments=attachments,
         now=False,
     )
+
+
+def get_completion_attachments(request):
+    attachments = []
+
+    if request.certificate_signed_pdf:
+        attachments.append(
+            get_email_attachment(
+                request.certificate_signed_pdf,
+                "frappe-sign-final-verification.pdf",
+            )
+        )
+        return attachments
+
+    if request.signed_pdf:
+        attachments.append(get_email_attachment(request.signed_pdf, "signed-document.pdf"))
+
+    if request.audit_certificate:
+        attachments.append(get_email_attachment(request.audit_certificate, "audit-certificate.pdf"))
+
+    return attachments
 
 
 def get_completion_recipients(request):
@@ -255,12 +253,6 @@ def get_email_attachment(file_url, fallback_filename):
 
 
 def send_daily_signing_reminders():
-    """
-    Scheduled daily reminder mailer.
-
-    Uses Frappe Sign Settings.default_reminder_days as the minimum number of days
-    between reminder emails for the same signer on the same request.
-    """
     settings = frappe.get_single("Frappe Sign Settings")
 
     if not settings.enabled:

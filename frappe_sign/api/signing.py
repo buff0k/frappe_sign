@@ -21,6 +21,7 @@ from frappe_sign.utils.pdf_stamping import stamp_pdf_fields
 from frappe_sign.utils.signatures import attach_signature_png
 from frappe_sign.utils.tokens import hash_signing_token
 from frappe_sign.utils.pdf_merge import append_pdf_bytes
+from frappe_sign.utils.pdf_digital_signing import digitally_sign_pdf
 
 
 OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
@@ -647,6 +648,8 @@ def _refresh_request_status(request):
 
 
 def complete_request_with_audit_certificate(request):
+    settings = get_settings()
+
     request.status = "Completed"
     request.completed_on = now_datetime()
     request.save(ignore_permissions=True)
@@ -687,7 +690,11 @@ def complete_request_with_audit_certificate(request):
         document_hash=final_certificate["sha256_hash"],
     )
 
-    apply_audit_certificate_to_signed_pdf(request.name)
+    if settings.append_audit_certificate:
+        apply_audit_certificate_to_signed_pdf(request.name)
+
+    if settings.enable_certificate_based_pdf_signing:
+        apply_digital_signature_to_final_pdf(request.name)
 
     request.reload()
     send_completion_notification(request)
@@ -699,37 +706,37 @@ def apply_audit_certificate_to_signed_pdf(request_name):
     request = frappe.get_doc("Frappe Sign Request", request_name)
 
     if not request.signed_pdf:
-        frappe.throw("Cannot create certificate-signed PDF without a signed PDF.")
+        frappe.throw("Cannot create audit-appended PDF without a signed PDF.")
 
     if not request.audit_certificate:
-        frappe.throw("Cannot create certificate-signed PDF without an audit certificate.")
+        frappe.throw("Cannot create audit-appended PDF without an audit certificate.")
 
     signed_pdf_bytes = get_file_bytes(request.signed_pdf)
     certificate_bytes = get_file_bytes(request.audit_certificate)
 
-    certificate_signed_pdf_bytes = append_pdf_bytes(
+    audit_appended_pdf_bytes = append_pdf_bytes(
         signed_pdf_bytes,
         certificate_bytes,
     )
 
-    certificate_signed_pdf_hash = sha256_bytes(certificate_signed_pdf_bytes)
+    audit_appended_pdf_hash = sha256_bytes(audit_appended_pdf_bytes)
 
     file_doc = attach_private_file(
         "Frappe Sign Request",
         request.name,
-        f"{frappe.scrub(request.name)}-certificate-signed.pdf",
-        certificate_signed_pdf_bytes,
+        f"{frappe.scrub(request.name)}-audit-appended.pdf",
+        audit_appended_pdf_bytes,
     )
 
     request.certificate_signed_pdf = file_doc.file_url
-    request.certificate_signed_pdf_hash = certificate_signed_pdf_hash
+    request.certificate_signed_pdf_hash = audit_appended_pdf_hash
     request.save(ignore_permissions=True)
 
     create_file_hash(
         request.name,
-        "Certificate Signed PDF",
+        "Audit Appended PDF",
         request.certificate_signed_pdf,
-        certificate_signed_pdf_hash,
+        audit_appended_pdf_hash,
         "Verification",
     )
 
@@ -737,18 +744,99 @@ def apply_audit_certificate_to_signed_pdf(request_name):
         request.name,
         "Certificate Applied",
         details={
+            "operation": "audit_certificate_appended",
             "signed_pdf": request.signed_pdf,
             "audit_certificate": request.audit_certificate,
-            "certificate_signed_pdf": request.certificate_signed_pdf,
-            "certificate_signed_pdf_hash": certificate_signed_pdf_hash,
+            "audit_appended_pdf": request.certificate_signed_pdf,
+            "audit_appended_pdf_hash": audit_appended_pdf_hash,
         },
-        document_hash=certificate_signed_pdf_hash,
+        document_hash=audit_appended_pdf_hash,
     )
 
     return {
         "certificate_signed_pdf": request.certificate_signed_pdf,
-        "certificate_signed_pdf_hash": certificate_signed_pdf_hash,
+        "certificate_signed_pdf_hash": audit_appended_pdf_hash,
     }
+
+
+def apply_digital_signature_to_final_pdf(request_name):
+    request = frappe.get_doc("Frappe Sign Request", request_name)
+    settings = get_settings()
+
+    if not settings.certificate_file:
+        frappe.throw(
+            "Certificate-based PDF signing is enabled, but no certificate file is configured "
+            "in Frappe Sign Settings."
+        )
+
+    password = get_certificate_password(settings)
+
+    base_pdf_url = request.certificate_signed_pdf or request.signed_pdf
+
+    if not base_pdf_url:
+        frappe.throw("Cannot digitally sign PDF because no final PDF is available.")
+
+    base_pdf_bytes = get_file_bytes(base_pdf_url)
+    certificate_bytes = get_file_bytes(settings.certificate_file)
+
+    digitally_signed_pdf_bytes = digitally_sign_pdf(
+        pdf_bytes=base_pdf_bytes,
+        certificate_bytes=certificate_bytes,
+        password=password,
+        reason="Frappe Sign certificate-based PDF signing",
+        location=settings.certificate_location,
+        field_name="FrappeSignDigitalSignature",
+    )
+
+    digitally_signed_pdf_hash = sha256_bytes(digitally_signed_pdf_bytes)
+
+    file_doc = attach_private_file(
+        "Frappe Sign Request",
+        request.name,
+        f"{frappe.scrub(request.name)}-digitally-signed.pdf",
+        digitally_signed_pdf_bytes,
+    )
+
+    request.certificate_signed_pdf = file_doc.file_url
+    request.certificate_signed_pdf_hash = digitally_signed_pdf_hash
+    request.save(ignore_permissions=True)
+
+    create_file_hash(
+        request.name,
+        "Digitally Signed PDF",
+        request.certificate_signed_pdf,
+        digitally_signed_pdf_hash,
+        "Verification",
+    )
+
+    append_event(
+        request.name,
+        "Certificate Applied",
+        details={
+            "operation": "digital_signature_applied",
+            "base_pdf": base_pdf_url,
+            "digitally_signed_pdf": request.certificate_signed_pdf,
+            "digitally_signed_pdf_hash": digitally_signed_pdf_hash,
+            "certificate_file": settings.certificate_file,
+            "certificate_location": settings.certificate_location,
+        },
+        document_hash=digitally_signed_pdf_hash,
+    )
+
+    return {
+        "certificate_signed_pdf": request.certificate_signed_pdf,
+        "certificate_signed_pdf_hash": digitally_signed_pdf_hash,
+    }
+
+
+def get_certificate_password(settings):
+    if not settings.certificate_password:
+        return None
+
+    try:
+        return settings.get_password("certificate_password")
+    except Exception:
+        return settings.certificate_password
 
 
 def submit_completed_request(request_name):

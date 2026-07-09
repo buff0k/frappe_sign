@@ -21,9 +21,18 @@
   "enable_certificate_based_pdf_signing",
   "section_break_fwqe",
   "certificate_section",
+  "certificate_help",
   "certificate_file",
   "certificate_password",
   "certificate_location",
+  "certificate_subject",
+  "certificate_issuer",
+  "certificate_serial_number",
+  "certificate_fingerprint_sha256",
+  "certificate_valid_from",
+  "certificate_valid_to",
+  "certificate_is_self_signed",
+  "certificate_status",
   "source_documents_section",
   "configured_doctypes"
  ],
@@ -136,13 +145,69 @@
    "fieldtype": "Table",
    "label": "Configured DocTypes",
    "options": "Frappe Sign Source DocType"
+  },
+  {
+   "fieldname": "certificate_help",
+   "fieldtype": "HTML",
+   "label": "Certificate Help",
+   "options": "<div class=\"frappe-sign-settings-note\">\n    <h4>PDF signing certificate</h4>\n\n    <p>\n        Certificate-based PDF signing uses a dedicated document-signing certificate.\n        This is different from the SSL/TLS certificate used by your website domain.\n    </p>\n\n    <p>\n        <strong>Self-signed certificate:</strong>\n        suitable for internal integrity checks and audit evidence. External PDF viewers\n        may show the signature as unknown or untrusted unless the certificate is manually trusted.\n    </p>\n\n    <p>\n        <strong>CA-issued document-signing certificate:</strong>\n        suitable for external-facing documents when issued by a recognised document-signing\n        certificate authority or trust service provider. This is not the same as a normal\n        domain SSL certificate.\n    </p>\n\n    <p>\n        Let\u2019s Encrypt certificates are intended for HTTPS/TLS server authentication and should\n        not be used as PDF document-signing certificates.\n    </p>\n</div>"
+  },
+  {
+   "fieldname": "certificate_subject",
+   "fieldtype": "Data",
+   "label": "Certificate Subject",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_issuer",
+   "fieldtype": "Data",
+   "label": "Certificate Issuer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_serial_number",
+   "fieldtype": "Data",
+   "label": "Certificate Serial Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_fingerprint_sha256",
+   "fieldtype": "Data",
+   "label": "Certificate Fingerprint (SHA256)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_valid_from",
+   "fieldtype": "Datetime",
+   "label": "Certificate Valid From",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_valid_to",
+   "fieldtype": "Datetime",
+   "label": "Certificate Valid To",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "certificate_is_self_signed",
+   "fieldtype": "Check",
+   "label": "Certificate is Self Signed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_status",
+   "fieldtype": "Select",
+   "label": "Certificate Status",
+   "options": "Not Configured\nValid\nExpiring Soon\nExpired\nInvalid",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-07 12:00:50.387106",
+ "modified": "2026-07-09 16:38:00.623837",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Settings",
