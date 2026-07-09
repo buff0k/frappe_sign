@@ -20,6 +20,7 @@ from frappe_sign.utils.notifications import (
 from frappe_sign.utils.pdf_stamping import stamp_pdf_fields
 from frappe_sign.utils.signatures import attach_signature_png
 from frappe_sign.utils.tokens import hash_signing_token
+from frappe_sign.utils.pdf_merge import append_pdf_bytes
 
 
 OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
@@ -650,55 +651,28 @@ def complete_request_with_audit_certificate(request):
     request.completed_on = now_datetime()
     request.save(ignore_permissions=True)
 
-    first_pass = generate_audit_certificate(request.name, suffix="pass-1")
-
-    request.reload()
-    request.audit_certificate = first_pass["file_url"]
-    request.save(ignore_permissions=True)
-
-    create_file_hash(
-        request.name,
-        "Audit Certificate",
-        request.audit_certificate,
-        first_pass["sha256_hash"],
-        "Certificate",
-    )
-
-    append_event(
-        request.name,
-        "Certificate Generated",
-        details={
-            "audit_certificate": request.audit_certificate,
-            "certificate_hash": first_pass["sha256_hash"],
-            "pass": 1,
-            "final_certificate": False,
-        },
-        document_hash=first_pass["sha256_hash"],
-    )
-
     append_event(
         request.name,
         "Completed",
         details={
             "signed_pdf": request.signed_pdf,
             "signed_pdf_hash": request.signed_pdf_hash,
-            "audit_certificate": request.audit_certificate,
-            "audit_certificate_hash": first_pass["sha256_hash"],
+            "completed_on": request.completed_on,
         },
         document_hash=request.signed_pdf_hash,
     )
 
-    second_pass = generate_audit_certificate(request.name, suffix="final")
+    final_certificate = generate_audit_certificate(request.name, suffix="final")
 
     request.reload()
-    request.audit_certificate = second_pass["file_url"]
+    request.audit_certificate = final_certificate["file_url"]
     request.save(ignore_permissions=True)
 
     create_file_hash(
         request.name,
         "Audit Certificate",
         request.audit_certificate,
-        second_pass["sha256_hash"],
+        final_certificate["sha256_hash"],
         "Certificate",
     )
 
@@ -707,18 +681,74 @@ def complete_request_with_audit_certificate(request):
         "Certificate Generated",
         details={
             "audit_certificate": request.audit_certificate,
-            "certificate_hash": second_pass["sha256_hash"],
-            "previous_certificate_hash": first_pass["sha256_hash"],
-            "pass": 2,
+            "certificate_hash": final_certificate["sha256_hash"],
             "final_certificate": True,
         },
-        document_hash=second_pass["sha256_hash"],
+        document_hash=final_certificate["sha256_hash"],
     )
+
+    apply_audit_certificate_to_signed_pdf(request.name)
 
     request.reload()
     send_completion_notification(request)
 
     submit_completed_request(request.name)
+
+
+def apply_audit_certificate_to_signed_pdf(request_name):
+    request = frappe.get_doc("Frappe Sign Request", request_name)
+
+    if not request.signed_pdf:
+        frappe.throw("Cannot create certificate-signed PDF without a signed PDF.")
+
+    if not request.audit_certificate:
+        frappe.throw("Cannot create certificate-signed PDF without an audit certificate.")
+
+    signed_pdf_bytes = get_file_bytes(request.signed_pdf)
+    certificate_bytes = get_file_bytes(request.audit_certificate)
+
+    certificate_signed_pdf_bytes = append_pdf_bytes(
+        signed_pdf_bytes,
+        certificate_bytes,
+    )
+
+    certificate_signed_pdf_hash = sha256_bytes(certificate_signed_pdf_bytes)
+
+    file_doc = attach_private_file(
+        "Frappe Sign Request",
+        request.name,
+        f"{frappe.scrub(request.name)}-certificate-signed.pdf",
+        certificate_signed_pdf_bytes,
+    )
+
+    request.certificate_signed_pdf = file_doc.file_url
+    request.certificate_signed_pdf_hash = certificate_signed_pdf_hash
+    request.save(ignore_permissions=True)
+
+    create_file_hash(
+        request.name,
+        "Certificate Signed PDF",
+        request.certificate_signed_pdf,
+        certificate_signed_pdf_hash,
+        "Verification",
+    )
+
+    append_event(
+        request.name,
+        "Certificate Applied",
+        details={
+            "signed_pdf": request.signed_pdf,
+            "audit_certificate": request.audit_certificate,
+            "certificate_signed_pdf": request.certificate_signed_pdf,
+            "certificate_signed_pdf_hash": certificate_signed_pdf_hash,
+        },
+        document_hash=certificate_signed_pdf_hash,
+    )
+
+    return {
+        "certificate_signed_pdf": request.certificate_signed_pdf,
+        "certificate_signed_pdf_hash": certificate_signed_pdf_hash,
+    }
 
 
 def submit_completed_request(request_name):

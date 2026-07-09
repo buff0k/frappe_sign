@@ -1016,3 +1016,173 @@
 .frappe-sign-toolbar {
     flex-wrap: wrap;
 }
+
+/* Frappe Sign Validator
+   ========================================================================== */
+
+.frappe-sign-validator {
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.frappe-sign-validator-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color, #d1d8dd);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.frappe-sign-validator-card h3 {
+    margin-top: 0;
+}
+
+.frappe-sign-validator-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.frappe-sign-validator-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.frappe-sign-validation-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border-color, #d1d8dd);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+}
+
+.frappe-sign-validation-header h3 {
+    margin-bottom: 6px;
+}
+
+.frappe-sign-validation-hash {
+    min-width: 360px;
+    max-width: 480px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.frappe-sign-validation-hash span {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.frappe-sign-validation-hash code,
+.frappe-sign-validator-summary-item code {
+    white-space: normal;
+    word-break: break-all;
+}
+
+.frappe-sign-validator-section {
+    margin-top: 20px;
+}
+
+.frappe-sign-validator-section h4 {
+    margin-bottom: 10px;
+}
+
+.frappe-sign-validator-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid var(--border-color, #d1d8dd);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.frappe-sign-validator-summary-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eef2f7;
+    min-width: 0;
+}
+
+.frappe-sign-validator-summary-item:nth-child(odd) {
+    border-right: 1px solid #eef2f7;
+}
+
+.frappe-sign-validator-summary-item span {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 3px;
+}
+
+.frappe-sign-validator-summary-item strong {
+    display: block;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.frappe-sign-validator-table {
+    margin-bottom: 0;
+}
+
+.frappe-sign-validator-table th {
+    background: #f8fafc;
+}
+
+.frappe-sign-validator-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.frappe-sign-validator-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.frappe-sign-validator-pill.green {
+    color: #0f7b3f;
+    background: #dff5e8;
+}
+
+.frappe-sign-validator-pill.red {
+    color: #b42318;
+    background: #fee4e2;
+}
+
+.frappe-sign-validator-pill.gray {
+    color: #475569;
+    background: #e2e8f0;
+}
+
+@media (max-width: 900px) {
+    .frappe-sign-validator-grid,
+    .frappe-sign-validator-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .frappe-sign-validator-summary-item:nth-child(odd) {
+        border-right: 0;
+    }
+
+    .frappe-sign-validation-header {
+        flex-direction: column;
+    }
+
+    .frappe-sign-validation-hash {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+    }
+}

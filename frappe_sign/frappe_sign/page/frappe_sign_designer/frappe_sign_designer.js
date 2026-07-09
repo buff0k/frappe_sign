@@ -16,8 +16,16 @@ class FrappeSignDesigner {
         this.page = page;
         this.wrapper = wrapper;
 
+        this.mode = null;
+
         this.request_name = null;
         this.request = null;
+
+        this.template_name = null;
+        this.template = null;
+        this.sample_source_name = null;
+
+        this.document = null;
         this.signers = [];
         this.fields = [];
 
@@ -70,8 +78,8 @@ class FrappeSignDesigner {
             <div class="frappe-sign frappe-sign-designer">
                 <div class="frappe-sign-designer-toolbar">
                     <div class="frappe-sign-toolbar-left">
-                        <button class="btn btn-default" id="frappe-sign-back-to-request">
-                            ${__("Back to Request")}
+                        <button class="btn btn-default" id="frappe-sign-back-to-document">
+                            ${__("Back")}
                         </button>
 
                         <button class="btn btn-primary" id="frappe-sign-save-fields">
@@ -101,9 +109,9 @@ class FrappeSignDesigner {
                 <div class="frappe-sign-designer-layout">
                     <aside class="frappe-sign-left-panel">
                         <div class="frappe-sign-card">
-                            <h4>${__("Request")}</h4>
+                            <h4 id="frappe-sign-summary-title">${__("Document")}</h4>
                             <div id="frappe-sign-request-summary" class="frappe-sign-muted">
-                                ${__("No request loaded.")}
+                                ${__("No document loaded.")}
                             </div>
                         </div>
 
@@ -166,13 +174,23 @@ class FrappeSignDesigner {
     }
 
     bind_events() {
-        this.page.main.find("#frappe-sign-back-to-request").on("click", () => {
-            if (!this.request_name) {
-                frappe.set_route("List", "Frappe Sign Request");
+        this.page.main.find("#frappe-sign-back-to-document").on("click", () => {
+            if (this.mode === "template") {
+                if (this.template_name) {
+                    frappe.set_route("Form", "Frappe Sign Template", this.template_name);
+                    return;
+                }
+
+                frappe.set_route("List", "Frappe Sign Template");
                 return;
             }
 
-            frappe.set_route("Form", "Frappe Sign Request", this.request_name);
+            if (this.request_name) {
+                frappe.set_route("Form", "Frappe Sign Request", this.request_name);
+                return;
+            }
+
+            frappe.set_route("List", "Frappe Sign Request");
         });
 
         this.page.main.find("#frappe-sign-save-fields").on("click", async () => {
@@ -184,7 +202,7 @@ class FrappeSignDesigner {
         });
 
         this.page.main.find("#frappe-sign-reload").on("click", async () => {
-            await this.load_request();
+            await this.reload_current_document();
         });
 
         this.page.main.find("#frappe-sign-toggle-snap").on("click", () => {
@@ -262,43 +280,93 @@ class FrappeSignDesigner {
     resolve_route() {
         const route = frappe.get_route();
 
-        this.request_name =
-            frappe.route_options?.request ||
-            route[1] ||
-            route[2] ||
-            null;
+        const route_options = frappe.route_options || {};
 
-        frappe.route_options = null;
-
-        if (!this.request_name) {
-            this.prompt_for_request();
+        if (route_options.template) {
+            this.mode = "template";
+            this.template_name = route_options.template;
+            this.sample_source_name = route_options.sample_source_name || null;
+            frappe.route_options = null;
+            this.load_template();
             return;
         }
 
-        this.load_request();
+        if (route_options.request) {
+            this.mode = "request";
+            this.request_name = route_options.request;
+            frappe.route_options = null;
+            this.load_request();
+            return;
+        }
+
+        frappe.route_options = null;
+
+        if (route[1]) {
+            this.mode = "request";
+            this.request_name = route[1];
+            this.load_request();
+            return;
+        }
+
+        this.prompt_for_document();
     }
 
-    prompt_for_request() {
+    prompt_for_document() {
         const dialog = new frappe.ui.Dialog({
-            title: __("Open Signing Request"),
+            title: __("Open Designer"),
             fields: [
+                {
+                    fieldname: "mode",
+                    fieldtype: "Select",
+                    label: __("Designer Mode"),
+                    options: "Request\nTemplate",
+                    default: "Request",
+                    reqd: 1,
+                },
                 {
                     fieldname: "request",
                     fieldtype: "Link",
                     label: __("Frappe Sign Request"),
                     options: "Frappe Sign Request",
-                    reqd: 1,
+                    depends_on: "eval:doc.mode=='Request'",
+                    mandatory_depends_on: "eval:doc.mode=='Request'",
+                },
+                {
+                    fieldname: "template",
+                    fieldtype: "Link",
+                    label: __("Frappe Sign Template"),
+                    options: "Frappe Sign Template",
+                    depends_on: "eval:doc.mode=='Template'",
+                    mandatory_depends_on: "eval:doc.mode=='Template'",
                 },
             ],
             primary_action_label: __("Open"),
             primary_action: (values) => {
                 dialog.hide();
+
+                if (values.mode === "Template") {
+                    this.mode = "template";
+                    this.template_name = values.template;
+                    this.load_template();
+                    return;
+                }
+
+                this.mode = "request";
                 this.request_name = values.request;
                 this.load_request();
             },
         });
 
         dialog.show();
+    }
+
+    async reload_current_document() {
+        if (this.mode === "template") {
+            await this.load_template();
+            return;
+        }
+
+        await this.load_request();
     }
 
     async ensure_pdf_ready() {
@@ -402,10 +470,90 @@ class FrappeSignDesigner {
         });
     }
 
+    prompt_for_template_sample_source() {
+        return new Promise((resolve) => {
+            frappe.db.get_value(
+                "Frappe Sign Template",
+                this.template_name,
+                ["source_doctype", "template_name", "print_format"]
+            ).then((response) => {
+                const template = response.message || {};
+
+                if (!template.source_doctype) {
+                    frappe.msgprint(__("Please select a Source DocType on the Template before opening the Designer."));
+                    resolve(null);
+                    return;
+                }
+
+                if (!template.print_format) {
+                    frappe.msgprint(__("Please select a Print Format on the Template before opening the Designer."));
+                    resolve(null);
+                    return;
+                }
+
+                let resolved = false;
+
+                const dialog = new frappe.ui.Dialog({
+                    title: __("Select Sample Source Document"),
+                    fields: [
+                        {
+                            fieldname: "help",
+                            fieldtype: "HTML",
+                            options: `
+                                <p>
+                                    ${__("Select a sample {0} record to render a preview PDF for template field placement.", [template.source_doctype])}
+                                </p>
+                                <p class="text-muted">
+                                    ${__("The sample document is only used for Designer preview and is not saved on the Template.")}
+                                </p>
+                            `,
+                        },
+                        {
+                            fieldname: "source_doctype",
+                            fieldtype: "Data",
+                            label: __("Source DocType"),
+                            default: template.source_doctype,
+                            hidden: 1,
+                        },
+                        {
+                            fieldname: "sample_source_name",
+                            fieldtype: "Dynamic Link",
+                            label: __("Sample Source Name"),
+                            options: "source_doctype",
+                            reqd: 1,
+                        },
+                    ],
+                    primary_action_label: __("Open Designer"),
+                    primary_action: (values) => {
+                        if (!values.sample_source_name) {
+                            frappe.msgprint(__("Please select a sample source document."));
+                            return;
+                        }
+
+                        resolved = true;
+                        this.sample_source_name = values.sample_source_name;
+
+                        resolve(values.sample_source_name);
+                        dialog.hide();
+                    },
+                    onhide: () => {
+                        if (!resolved) {
+                            resolve(null);
+                        }
+                    },
+                });
+
+                dialog.show();
+            });
+        });
+    }
+
     async load_request() {
         if (!this.request_name) {
             return;
         }
+
+        this.mode = "request";
 
         if (!(await this.ensure_pdf_ready())) {
             this.page.main.find("#frappe-sign-pdf-pages").html(`
@@ -427,6 +575,8 @@ class FrappeSignDesigner {
         });
 
         this.request = response.message.request;
+        this.template = null;
+        this.document = this.request;
         this.signers = response.message.signers || [];
         this.fields = response.message.fields || [];
 
@@ -446,7 +596,82 @@ class FrappeSignDesigner {
         this.update_snap_button();
     }
 
+    async load_template() {
+        if (!this.template_name) {
+            return;
+        }
+
+        this.mode = "template";
+
+        if (!this.sample_source_name) {
+            this.sample_source_name = await this.prompt_for_template_sample_source();
+
+            if (!this.sample_source_name) {
+                this.page.main.find("#frappe-sign-pdf-pages").html(`
+                    <div class="frappe-sign-message frappe-sign-message-error">
+                        <h2>${__("Sample Source Required")}</h2>
+                        <p>${__("A sample source document is required before the Template Designer can load.")}</p>
+                    </div>
+                `);
+                return;
+            }
+        }
+
+        const response = await frappe.call({
+            method: "frappe_sign.api.designer.get_template_designer_context",
+            args: {
+                template_name: this.template_name,
+                sample_source_name: this.sample_source_name,
+            },
+            freeze: true,
+            freeze_message: __("Loading signing template..."),
+        });
+
+        this.template = response.message.template;
+        this.request = null;
+        this.document = this.template;
+        this.signers = response.message.signers || [];
+        this.fields = response.message.fields || [];
+
+        this.is_dirty = false;
+        this.is_read_only = false;
+
+        this.clear_selected_field_type();
+        this.render_summary();
+        this.render_signers();
+        this.render_toolbar_state();
+        this.render_field_list();
+
+        await this.load_pdf_document();
+        await this.render_pdf();
+
+        this.mark_clean();
+        this.update_snap_button();
+    }
+
     render_summary() {
+        if (this.mode === "template") {
+            this.page.set_title(__("Frappe Sign Template Designer"));
+            this.page.main.find("#frappe-sign-summary-title").text(__("Template"));
+            this.page.main.find("#frappe-sign-back-to-document").text(__("Back to Template"));
+
+            this.page.main.find("#frappe-sign-request-summary").html(`
+                <p><strong>${frappe.utils.escape_html(this.template.template_name || this.template.name)}</strong></p>
+                <p>${__("Source DocType")}: <strong>${frappe.utils.escape_html(this.template.source_doctype || "")}</strong></p>
+                <p>${__("Sample Source")}: ${frappe.utils.escape_html(this.template.sample_source_name || "")}</p>
+                <p>${__("Print Format")}: ${frappe.utils.escape_html(this.template.print_format || "")}</p>
+                <p class="frappe-sign-muted">
+                    ${__("Template fields are saved by signer label and can later be applied to real signing requests.")}
+                </p>
+            `);
+
+            return;
+        }
+
+        this.page.set_title(__("Frappe Sign Designer"));
+        this.page.main.find("#frappe-sign-summary-title").text(__("Request"));
+        this.page.main.find("#frappe-sign-back-to-document").text(__("Back to Request"));
+
         const source_line =
             this.request.source_type === "Uploaded PDF"
                 ? __("Uploaded PDF")
@@ -495,8 +720,14 @@ class FrappeSignDesigner {
 
     render_toolbar_state() {
         this.page.main.find("#frappe-sign-save-fields").prop("disabled", this.is_read_only);
-        this.page.main.find("#frappe-sign-send-request").prop("disabled", this.is_read_only);
         this.page.main.find(".frappe-sign-palette-item").toggleClass("disabled", this.is_read_only);
+
+        if (this.mode === "template") {
+            this.page.main.find("#frappe-sign-send-request").hide();
+        } else {
+            this.page.main.find("#frappe-sign-send-request").show().prop("disabled", this.is_read_only);
+        }
+
         this.update_snap_button();
     }
 
@@ -527,6 +758,23 @@ class FrappeSignDesigner {
     }
 
     async load_pdf_document() {
+        if (this.mode === "template") {
+            if (!this.template.source_pdf_data_url) {
+                frappe.throw(__("No preview PDF is available for this template."));
+            }
+
+            const base64_data = this.template.source_pdf_data_url.split(",")[1];
+            const binary = atob(base64_data);
+            const bytes = new Uint8Array(binary.length);
+
+            for (let index = 0; index < binary.length; index++) {
+                bytes[index] = binary.charCodeAt(index);
+            }
+
+            this.pdf_doc = await window.pdfjsLib.getDocument({ data: bytes }).promise;
+            return;
+        }
+
         if (!this.request.source_pdf) {
             frappe.throw(__("No source PDF is attached to this request."));
         }
@@ -914,9 +1162,11 @@ class FrappeSignDesigner {
         safe_left = snapped.left;
         safe_top = snapped.top;
 
+        const signer_label = this.get_signer_label(this.selected_signer);
+
         const field = {
             signer: this.selected_signer,
-            signer_label: this.get_signer_label(this.selected_signer),
+            signer_label: signer_label,
             field_type: field_type,
             page: cint(overlay.attr("data-page")),
             x_ratio: this.round_ratio(safe_left / rect.width),
@@ -1427,11 +1677,36 @@ class FrappeSignDesigner {
 
     async save_fields(options = {}) {
         if (this.is_read_only) {
-            frappe.msgprint(__("This request is read-only because it has already been sent."));
+            frappe.msgprint(__("This document is read-only."));
             return;
         }
 
         const reload = options.reload !== false;
+
+        if (this.mode === "template") {
+            await frappe.call({
+                method: "frappe_sign.api.designer.save_template_fields",
+                args: {
+                    template_name: this.template_name,
+                    fields_json: JSON.stringify(this.fields),
+                },
+                freeze: true,
+                freeze_message: __("Saving template fields..."),
+            });
+
+            this.mark_clean();
+
+            frappe.show_alert({
+                message: __("Template fields saved."),
+                indicator: "green",
+            });
+
+            if (reload) {
+                await this.load_template();
+            }
+
+            return;
+        }
 
         await frappe.call({
             method: "frappe_sign.api.designer.save_fields",
@@ -1456,6 +1731,10 @@ class FrappeSignDesigner {
     }
 
     async send_request() {
+        if (this.mode === "template") {
+            return;
+        }
+
         if (this.is_read_only) {
             frappe.msgprint(__("This request has already been sent."));
             return;

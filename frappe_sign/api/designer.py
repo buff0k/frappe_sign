@@ -1,13 +1,13 @@
 # Copyright (c) 2026, BuFf0k and contributors
 # For license information, please see license.txt
 
-import json
 import base64
-import re
+import json
+
 import frappe
 
 from frappe_sign.utils.audit import append_event, sha256_bytes
-from frappe_sign.utils.files import attach_private_file, get_file_bytes
+from frappe_sign.utils.files import get_file_bytes
 from frappe_sign.utils.pdf import render_source_pdf
 
 
@@ -209,26 +209,6 @@ def create_designer_file_hash(request_name, file_type, file_url, sha256_hash, ha
     return doc
 
 
-def decode_pdf_data_url(data_url):
-    if not data_url:
-        frappe.throw("Missing PDF upload data.")
-
-    match = re.match(r"^data:application/pdf;base64,(.+)$", data_url)
-
-    if not match:
-        frappe.throw("Only PDF uploads are supported.")
-
-    try:
-        pdf_bytes = base64.b64decode(match.group(1), validate=True)
-    except Exception:
-        frappe.throw("Could not decode uploaded PDF.")
-
-    if not pdf_bytes.startswith(b"%PDF"):
-        frappe.throw("Uploaded file does not appear to be a valid PDF.")
-
-    return pdf_bytes
-
-
 @frappe.whitelist()
 def get_designer_context(request_name):
     request = frappe.get_doc("Frappe Sign Request", request_name)
@@ -245,6 +225,7 @@ def get_designer_context(request_name):
         request.reload()
 
     return {
+        "mode": "request",
         "request": {
             "name": request.name,
             "request_title": request.request_title,
@@ -285,6 +266,88 @@ def get_designer_context(request_name):
                 "default_value": field.default_value,
             }
             for field in request.fields
+        ],
+    }
+
+
+@frappe.whitelist()
+def get_template_designer_context(template_name, sample_source_name):
+    template = frappe.get_doc("Frappe Sign Template", template_name)
+
+    if not frappe.has_permission("Frappe Sign Template", "read", doc=template):
+        frappe.throw("You do not have permission to access this signing template.")
+
+    if not template.source_doctype:
+        frappe.throw("Please select a Source DocType before opening the Designer.")
+
+    if not template.print_format:
+        frappe.throw("Please select a Print Format before opening the Designer.")
+
+    if not sample_source_name:
+        frappe.throw("Please select a sample Source Name before opening the Designer.")
+
+    if not frappe.db.exists(template.source_doctype, sample_source_name):
+        frappe.throw(f"{template.source_doctype} {sample_source_name} does not exist.")
+
+    source_doc = frappe.get_doc(template.source_doctype, sample_source_name)
+
+    if not frappe.has_permission(template.source_doctype, "read", doc=source_doc):
+        frappe.throw("You do not have permission to read the selected sample source document.")
+
+    pdf_bytes = render_source_pdf(
+        template.source_doctype,
+        sample_source_name,
+        template.print_format,
+    )
+
+    pdf_data_url = "data:application/pdf;base64," + base64.b64encode(pdf_bytes).decode("utf-8")
+
+    signer_labels = [
+        {
+            "name": signer.signer_label,
+            "signer": signer.signer_label,
+            "full_name": signer.signer_label,
+            "email": "",
+            "role": signer.role,
+            "signing_order": signer.signing_order,
+            "status": "",
+        }
+        for signer in template.signers
+        if signer.role == "Signer"
+    ]
+
+    if not signer_labels:
+        frappe.throw("Please add at least one Template Signer before opening the Designer.")
+
+    return {
+        "mode": "template",
+        "template": {
+            "name": template.name,
+            "template_name": template.template_name,
+            "source_doctype": template.source_doctype,
+            "sample_source_name": sample_source_name,
+            "sample_source_title": source_doc.get_title() or source_doc.name,
+            "print_format": template.print_format,
+            "enabled": template.enabled,
+            "source_pdf_data_url": pdf_data_url,
+        },
+        "signers": signer_labels,
+        "fields": [
+            {
+                "name": field.name,
+                "signer": field.signer_label,
+                "signer_label": field.signer_label,
+                "field_type": field.field_type,
+                "page": field.page,
+                "x_ratio": field.x_ratio,
+                "y_ratio": field.y_ratio,
+                "width_ratio": field.width_ratio,
+                "height_ratio": field.height_ratio,
+                "required": field.required,
+                "read_only": field.read_only,
+                "default_value": field.default_value,
+            }
+            for field in template.fields
         ],
     }
 
@@ -336,4 +399,58 @@ def save_fields(request_name, fields_json):
     return {
         "status": "saved",
         "field_count": len(request.fields),
+    }
+
+
+@frappe.whitelist()
+def save_template_fields(template_name, fields_json):
+    template = frappe.get_doc("Frappe Sign Template", template_name)
+
+    if not frappe.has_permission("Frappe Sign Template", "write", doc=template):
+        frappe.throw("You do not have permission to update this signing template.")
+
+    fields = json.loads(fields_json or "[]")
+
+    valid_signer_labels = {
+        signer.signer_label
+        for signer in template.signers
+        if signer.role == "Signer"
+    }
+
+    if not valid_signer_labels:
+        frappe.throw("Please add at least one Template Signer before saving fields.")
+
+    template.set("fields", [])
+
+    for field in fields:
+        signer_label = field.get("signer_label") or field.get("signer")
+        field_type = field.get("field_type")
+
+        if not signer_label:
+            frappe.throw("Each template field requires a Signer Label.")
+
+        if signer_label not in valid_signer_labels:
+            frappe.throw(f"Invalid Template Signer Label: {signer_label}")
+
+        template.append(
+            "fields",
+            {
+                "signer_label": signer_label,
+                "field_type": field_type,
+                "page": field.get("page"),
+                "x_ratio": field.get("x_ratio"),
+                "y_ratio": field.get("y_ratio"),
+                "width_ratio": field.get("width_ratio"),
+                "height_ratio": field.get("height_ratio"),
+                "required": field.get("required"),
+                "read_only": field.get("read_only"),
+                "default_value": field.get("default_value"),
+            },
+        )
+
+    template.save()
+
+    return {
+        "status": "saved",
+        "field_count": len(template.fields),
     }

@@ -224,7 +224,6 @@ def hash_table(request, styles):
         ["Source PDF Hash", request.source_pdf_hash],
         ["Signed PDF Hash", request.signed_pdf_hash],
         ["Audit Chain Hash", request.audit_chain_hash],
-        ["Certificate Signed PDF Hash", request.certificate_signed_pdf_hash],
     ]
 
     return key_value_table(rows, styles)

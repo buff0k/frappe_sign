@@ -11,7 +11,8 @@
   "print_format",
   "enabled",
   "description",
-  "fields"
+  "fields",
+  "signers"
  ],
  "fields": [
   {
@@ -47,15 +48,22 @@
    "fieldtype": "Table",
    "label": "Fields",
    "options": "Frappe Sign Template Field"
+  },
+  {
+   "fieldname": "signers",
+   "fieldtype": "Table",
+   "label": "signers",
+   "options": "Frappe Sign Template Signer"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-07 12:55:05.630652",
+ "modified": "2026-07-09 15:20:16.658777",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Template",
+ "naming_rule": "By script",
  "owner": "Administrator",
  "permissions": [
   {

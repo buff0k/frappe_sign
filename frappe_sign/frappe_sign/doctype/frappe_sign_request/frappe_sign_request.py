@@ -3,10 +3,10 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import now_datetime, formatdate, today
+from frappe.utils import formatdate, now_datetime, today
 
-from frappe_sign.utils.audit import append_event
-from frappe_sign.utils.audit import sha256_bytes
+from frappe_sign.api.source import print_format_matches_doctype, validate_source_doctype
+from frappe_sign.utils.audit import append_event, sha256_bytes
 from frappe_sign.utils.files import get_file_bytes
 
 
@@ -55,6 +55,17 @@ class FrappeSignRequest(Document):
             frappe.throw("A signed PDF is required before submission.")
 
     def on_submit(self):
+        existing_completed_event = frappe.db.exists(
+            "Frappe Sign Event",
+            {
+                "frappe_sign_request": self.name,
+                "event_type": "Completed",
+            },
+        )
+
+        if existing_completed_event:
+            return
+
         append_event(
             self.name,
             "Completed",
@@ -64,27 +75,39 @@ class FrappeSignRequest(Document):
 
     def validate_source(self):
         if not self.source_type:
-            self.source_type = "Frappe Document"
+            self.source_type = "Uploaded PDF"
 
         if self.source_type == "Frappe Document":
-            if not self.source_doctype:
-                frappe.throw("Source DocType is required.")
+            self.validate_frappe_document_source()
+            return
 
-            if not self.source_name:
-                frappe.throw("Source Name is required.")
+        if self.source_type == "Uploaded PDF":
+            self.validate_uploaded_pdf_source()
+            return
 
-            if not frappe.db.exists(self.source_doctype, self.source_name):
-                frappe.throw(f"{self.source_doctype} {self.source_name} does not exist.")
+        frappe.throw(f"Invalid Source Type: {self.source_type}")
 
-            if not self.print_format:
-                frappe.throw("Print Format is required for Frappe Document signing requests.")
+    def validate_frappe_document_source(self):
+        if not self.source_doctype:
+            frappe.throw("Source DocType is required.")
 
-        elif self.source_type == "Uploaded PDF":
-            if not self.source_pdf:
-                frappe.throw("Source PDF is required for uploaded PDF signing requests.")
+        validate_source_doctype(self.source_doctype)
 
-        else:
-            frappe.throw(f"Invalid Source Type: {self.source_type}")
+        if not self.source_name:
+            frappe.throw("Source Name is required.")
+
+        if not frappe.db.exists(self.source_doctype, self.source_name):
+            frappe.throw(f"{self.source_doctype} {self.source_name} does not exist.")
+
+        if not self.print_format:
+            frappe.throw("Print Format is required for Frappe Document signing requests.")
+
+        if not print_format_matches_doctype(self.print_format, self.source_doctype):
+            frappe.throw("The selected Print Format is not valid for the selected Source DocType.")
+
+    def validate_uploaded_pdf_source(self):
+        if not self.source_pdf:
+            frappe.throw("Source PDF is required for uploaded PDF signing requests.")
 
     def validate_status(self):
         if not self.status:
@@ -148,6 +171,44 @@ class FrappeSignRequest(Document):
 
             if not signer.signing_order:
                 signer.signing_order = 1
+
+        self.normalize_signing_order()
+
+    def normalize_signing_order(self):
+        signer_rows = [
+            row for row in self.signers
+            if not row.role or row.role == "Signer"
+        ]
+
+        if not signer_rows:
+            return
+
+        if self.signing_mode == "Parallel":
+            for signer in signer_rows:
+                signer.signing_order = 1
+
+            return
+
+        all_default = all(
+            not row.signing_order or int(row.signing_order) == 1
+            for row in signer_rows
+        )
+
+        if all_default and len(signer_rows) > 1:
+            order = 1
+
+            for signer in signer_rows:
+                signer.signing_order = order
+                order += 1
+
+            return
+
+        max_order = max([int(row.signing_order or 0) for row in signer_rows])
+
+        for signer in signer_rows:
+            if not signer.signing_order or int(signer.signing_order) < 1:
+                max_order += 1
+                signer.signing_order = max_order
 
     def validate_fields(self):
         for field in self.fields:
