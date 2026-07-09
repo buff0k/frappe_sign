@@ -2,8 +2,231 @@
 # For license information, please see license.txt
 
 import json
-
+import base64
+import re
 import frappe
+
+from frappe_sign.utils.audit import append_event, sha256_bytes
+from frappe_sign.utils.files import attach_private_file, get_file_bytes
+from frappe_sign.utils.pdf import render_source_pdf
+
+
+@frappe.whitelist()
+def ensure_designer_pdf(request_name):
+    request = frappe.get_doc("Frappe Sign Request", request_name)
+
+    if not frappe.has_permission("Frappe Sign Request", "write", doc=request):
+        frappe.throw("You do not have permission to prepare this signing request.")
+
+    if request.docstatus != 0:
+        frappe.throw("Designer can only be used before the signing request is submitted.")
+
+    if request.status not in ("Draft", "Prepared"):
+        frappe.throw("Designer can only be used while the request is Draft or Prepared.")
+
+    if request.source_pdf:
+        return {
+            "status": "ready",
+            "source_pdf": request.source_pdf,
+        }
+
+    if request.source_type == "Frappe Document":
+        return generate_designer_source_pdf(request)
+
+    if request.source_type == "Uploaded PDF":
+        return {
+            "status": "upload_required",
+            "message": "Please upload a PDF before designing the signing request.",
+        }
+
+    frappe.throw("Unsupported Source Type.")
+
+
+def generate_designer_source_pdf(request):
+    if not request.source_doctype:
+        frappe.throw("Please select a Source DocType before opening the Designer.")
+
+    if not request.source_name:
+        frappe.throw("Please select a Source Name before opening the Designer.")
+
+    if not request.print_format:
+        frappe.throw("Please select a Print Format before opening the Designer.")
+
+    source_doc = frappe.get_doc(request.source_doctype, request.source_name)
+
+    if not frappe.has_permission(request.source_doctype, "read", doc=source_doc):
+        frappe.throw("You do not have permission to read the source document.")
+
+    pdf_bytes = render_source_pdf(
+        request.source_doctype,
+        request.source_name,
+        request.print_format,
+    )
+
+    pdf_hash = sha256_bytes(pdf_bytes)
+
+    file_doc = frappe.get_doc(
+        {
+            "doctype": "File",
+            "file_name": f"{frappe.scrub(request.source_doctype)}-{request.source_name}-source.pdf",
+            "attached_to_doctype": "Frappe Sign Request",
+            "attached_to_name": request.name,
+            "is_private": 1,
+            "content": pdf_bytes,
+        }
+    )
+    file_doc.save(ignore_permissions=True)
+
+    request.source_title = source_doc.get_title()
+    request.source_pdf = file_doc.file_url
+    request.source_pdf_hash = pdf_hash
+    request.tamper_status = "Not Checked"
+
+    if request.status == "Draft":
+        request.status = "Prepared"
+
+    request.save(ignore_permissions=True)
+
+    append_event(
+        request.name,
+        "PDF Generated",
+        details={
+            "source_type": "Frappe Document",
+            "source_doctype": request.source_doctype,
+            "source_name": request.source_name,
+            "print_format": request.print_format,
+            "source_pdf": request.source_pdf,
+            "triggered_from": "Designer",
+        },
+        document_hash=pdf_hash,
+    )
+
+    create_designer_file_hash(
+        request.name,
+        "Source PDF",
+        request.source_pdf,
+        pdf_hash,
+        "Generated",
+    )
+
+    return {
+        "status": "ready",
+        "source_pdf": request.source_pdf,
+        "source_pdf_hash": request.source_pdf_hash,
+        "source_title": request.source_title,
+    }
+
+
+@frappe.whitelist()
+def upload_designer_source_pdf_from_file_url(request_name, file_url):
+    request = frappe.get_doc("Frappe Sign Request", request_name)
+
+    if not frappe.has_permission("Frappe Sign Request", "write", doc=request):
+        frappe.throw("You do not have permission to upload a source PDF for this request.")
+
+    if request.docstatus != 0:
+        frappe.throw("Source PDF can only be uploaded before the request is submitted.")
+
+    if request.status not in ("Draft", "Prepared"):
+        frappe.throw("Source PDF can only be uploaded while the request is Draft or Prepared.")
+
+    if request.source_type != "Uploaded PDF":
+        frappe.throw("Manual PDF upload is only available for Uploaded PDF source type.")
+
+    if not file_url:
+        frappe.throw("Missing uploaded PDF.")
+
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+
+    if not file_doc.file_url.lower().endswith(".pdf") and not file_doc.file_name.lower().endswith(".pdf"):
+        frappe.throw("Only PDF files are supported.")
+
+    pdf_bytes = get_file_bytes(file_doc.file_url)
+
+    if not pdf_bytes.startswith(b"%PDF"):
+        frappe.throw("Uploaded file does not appear to be a valid PDF.")
+
+    pdf_hash = sha256_bytes(pdf_bytes)
+
+    file_doc.attached_to_doctype = "Frappe Sign Request"
+    file_doc.attached_to_name = request.name
+    file_doc.is_private = 1
+    file_doc.save(ignore_permissions=True)
+
+    request.source_pdf = file_doc.file_url
+    request.source_pdf_hash = pdf_hash
+    request.tamper_status = "Not Checked"
+
+    if request.status == "Draft":
+        request.status = "Prepared"
+
+    request.save(ignore_permissions=True)
+
+    append_event(
+        request.name,
+        "PDF Generated",
+        details={
+            "source_type": "Uploaded PDF",
+            "source_pdf": request.source_pdf,
+            "filename": file_doc.file_name,
+            "triggered_from": "Designer",
+        },
+        document_hash=pdf_hash,
+    )
+
+    create_designer_file_hash(
+        request.name,
+        "Source PDF",
+        request.source_pdf,
+        pdf_hash,
+        "Generated",
+    )
+
+    return {
+        "status": "ready",
+        "source_pdf": request.source_pdf,
+        "source_pdf_hash": request.source_pdf_hash,
+    }
+
+
+def create_designer_file_hash(request_name, file_type, file_url, sha256_hash, hash_purpose):
+    doc = frappe.get_doc(
+        {
+            "doctype": "Frappe Sign File Hash",
+            "frappe_sign_request": request_name,
+            "file_type": file_type,
+            "file_url": file_url,
+            "sha256_hash": sha256_hash,
+            "hash_purpose": hash_purpose,
+            "created_on": frappe.utils.now_datetime(),
+            "created_by": frappe.session.user,
+            "verification_status": "Not Checked",
+        }
+    )
+    doc.flags.ignore_permissions = True
+    doc.insert()
+
+    return doc
+
+
+def decode_pdf_data_url(data_url):
+    if not data_url:
+        frappe.throw("Missing PDF upload data.")
+
+    match = re.match(r"^data:application/pdf;base64,(.+)$", data_url)
+
+    if not match:
+        frappe.throw("Only PDF uploads are supported.")
+
+    try:
+        pdf_bytes = base64.b64decode(match.group(1), validate=True)
+    except Exception:
+        frappe.throw("Could not decode uploaded PDF.")
+
+    if not pdf_bytes.startswith(b"%PDF"):
+        frappe.throw("Uploaded file does not appear to be a valid PDF.")
+
+    return pdf_bytes
 
 
 @frappe.whitelist()
@@ -14,7 +237,12 @@ def get_designer_context(request_name):
         frappe.throw("You do not have permission to access this signing request.")
 
     if not request.source_pdf:
-        frappe.throw("This signing request does not have a source PDF.")
+        ensure_result = ensure_designer_pdf(request_name)
+
+        if ensure_result.get("status") != "ready":
+            frappe.throw("This signing request does not have a source PDF.")
+
+        request.reload()
 
     return {
         "request": {

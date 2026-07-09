@@ -1,24 +1,29 @@
 # Copyright (c) 2026, BuFf0k and contributors
 # For license information, please see license.txt
 
+import base64
 import json
-
 from io import BytesIO
-
-from PIL import Image, ImageDraw, ImageFont
 
 import frappe
 from frappe.utils import now_datetime
+from PIL import Image, ImageDraw, ImageFont
 
 from frappe_sign.api.request import create_file_hash
 from frappe_sign.utils.audit import append_event, sha256_bytes
+from frappe_sign.utils.certificates import generate_audit_certificate
 from frappe_sign.utils.files import attach_private_file, get_file_bytes
+from frappe_sign.utils.notifications import (
+    send_completion_notification,
+    send_progress_notification,
+)
 from frappe_sign.utils.pdf_stamping import stamp_pdf_fields
-from frappe_sign.utils.tokens import hash_signing_token
 from frappe_sign.utils.signatures import attach_signature_png
+from frappe_sign.utils.tokens import hash_signing_token
 
 
 OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
+CLOSED_SIGNER_STATUSES = ("Signed", "Declined", "Skipped")
 CLOSED_REQUEST_STATUSES = ("Completed", "Declined", "Expired", "Cancelled", "Failed")
 
 
@@ -77,14 +82,40 @@ def _get_profile_for_signer(signer):
     return profile
 
 
+def get_settings():
+    return frappe.get_single("Frappe Sign Settings")
+
+
+def is_consent_required():
+    settings = get_settings()
+    return bool(settings.require_signature_consent)
+
+
+def ensure_signer_can_act(request, signer):
+    if request.signing_mode != "Sequential":
+        return
+
+    signer_order = signer.signing_order or 1
+    current_order = request.current_signing_order or 1
+
+    if signer_order > current_order:
+        frappe.throw("This signing request is waiting for an earlier signer.")
+
+    if signer_order < current_order and signer.status != "Signed":
+        frappe.throw("This signing request is no longer available for this signer.")
+
+
 @frappe.whitelist(allow_guest=True)
 def get_signing_context(token):
     signer, request = _get_signer_from_token(token)
+
+    ensure_signer_can_act(request, signer)
 
     if signer.status in ("Pending", "Sent"):
         _mark_viewed(signer, request)
         request.reload()
         signer, request = _get_signer_from_token(token)
+        ensure_signer_can_act(request, signer)
 
     profile = _get_profile_for_signer(signer)
 
@@ -112,12 +143,14 @@ def get_signing_context(token):
         "title": request.request_title,
         "source_pdf": request.signed_pdf or request.source_pdf,
         "request_modified": str(request.modified),
+        "consent_required": is_consent_required(),
         "signer": {
             "name": signer.name,
             "profile": signer.signer,
             "full_name": signer.full_name,
             "email": signer.email,
             "status": signer.status,
+            "signing_order": signer.signing_order,
         },
         "profile": {
             "name": profile.name,
@@ -137,9 +170,15 @@ def get_signing_context(token):
 @frappe.whitelist(allow_guest=True)
 def give_consent(token):
     signer, request = _get_signer_from_token(token)
+    ensure_signer_can_act(request, signer)
+
     profile = _get_profile_for_signer(signer)
 
     profile.consent = 1
+
+    if hasattr(profile, "consent_on"):
+        profile.consent_on = now_datetime()
+
     profile.save(ignore_permissions=True)
 
     append_event(
@@ -165,6 +204,8 @@ def give_consent(token):
 @frappe.whitelist(allow_guest=True)
 def save_signing_profile_asset(token, kind, mode, data_url=None, typed_text=None):
     signer, request = _get_signer_from_token(token)
+    ensure_signer_can_act(request, signer)
+
     profile = _get_profile_for_signer(signer)
 
     if kind not in ("signature", "initials"):
@@ -192,9 +233,7 @@ def save_signing_profile_asset(token, kind, mode, data_url=None, typed_text=None
 
         png_bytes = make_typed_signature_png(typed_text, kind)
 
-        data_url = "data:image/png;base64," + frappe.safe_decode(
-            frappe.utils.data.encodebytes(png_bytes)
-        ).replace("\n", "")
+        data_url = "data:image/png;base64," + base64.b64encode(png_bytes).decode("utf-8")
 
         result = attach_signature_png(
             reference_doctype="Frappe Sign Profile",
@@ -281,9 +320,12 @@ def get_signature_font(size):
 
     return ImageFont.load_default()
 
+
 @frappe.whitelist(allow_guest=True)
 def get_signer_profile_image(token, kind):
     signer, request = _get_signer_from_token(token)
+    ensure_signer_can_act(request, signer)
+
     profile = _get_profile_for_signer(signer)
 
     if kind == "signature":
@@ -318,6 +360,8 @@ def complete_signing(token, field_values=None, request_modified=None):
     if not signer_row:
         frappe.throw("Signer row not found.")
 
+    ensure_signer_can_act(request, signer_row)
+
     if signer_row.status not in OPEN_SIGNER_STATUSES:
         frappe.throw("This signing request has already been completed or is no longer available.")
 
@@ -332,7 +376,7 @@ def complete_signing(token, field_values=None, request_modified=None):
 
     profile = _get_profile_for_signer(signer_row)
 
-    if not profile.consent:
+    if is_consent_required() and not profile.consent:
         frappe.throw("You must give consent before signing.")
 
     parsed_values = parse_field_values(field_values)
@@ -398,12 +442,16 @@ def complete_signing(token, field_values=None, request_modified=None):
     )
 
     _refresh_request_status(request)
-    notify_after_signing_action(request.name, signer_row, "Signed")
+
+    updated_request = frappe.get_doc("Frappe Sign Request", request.name)
+
+    if updated_request.status != "Completed":
+        send_progress_notification(updated_request, signer_row, "Signed")
 
     return {
         "status": signer_row.status,
-        "request_status": frappe.db.get_value("Frappe Sign Request", request.name, "status"),
-        "signed_pdf": request.signed_pdf,
+        "request_status": updated_request.status,
+        "signed_pdf": updated_request.signed_pdf,
         "signed_pdf_hash": signed_pdf_hash,
     }
 
@@ -420,8 +468,13 @@ def decline_signing(token, reason):
     if not signer_row:
         frappe.throw("Signer row not found.")
 
+    ensure_signer_can_act(request, signer_row)
+
     if signer_row.status not in OPEN_SIGNER_STATUSES:
         frappe.throw("This signing request has already been completed or is no longer available.")
+
+    if request.status in CLOSED_REQUEST_STATUSES:
+        frappe.throw(f"This signing request is {request.status}.")
 
     signer_row.status = "Declined"
     signer_row.declined_on = now_datetime()
@@ -444,7 +497,7 @@ def decline_signing(token, reason):
         },
     )
 
-    notify_after_signing_action(request.name, signer_row, "Declined", reason=reason)
+    send_progress_notification(request, signer_row, "Declined", reason=reason)
 
     return {"status": "Declined"}
 
@@ -582,16 +635,7 @@ def _refresh_request_status(request):
     signer_rows = [row for row in request.signers if row.role == "Signer"]
 
     if signer_rows and all(row.status == "Signed" for row in signer_rows):
-        request.status = "Completed"
-        request.completed_on = now_datetime()
-        request.save(ignore_permissions=True)
-
-        append_event(
-            request.name,
-            "Completed",
-            document_hash=request.signed_pdf_hash,
-        )
-
+        complete_request_with_audit_certificate(request)
         return
 
     if request.signing_mode == "Sequential":
@@ -601,11 +645,107 @@ def _refresh_request_status(request):
     request.save(ignore_permissions=True)
 
 
+def complete_request_with_audit_certificate(request):
+    request.status = "Completed"
+    request.completed_on = now_datetime()
+    request.save(ignore_permissions=True)
+
+    first_pass = generate_audit_certificate(request.name, suffix="pass-1")
+
+    request.reload()
+    request.audit_certificate = first_pass["file_url"]
+    request.save(ignore_permissions=True)
+
+    create_file_hash(
+        request.name,
+        "Audit Certificate",
+        request.audit_certificate,
+        first_pass["sha256_hash"],
+        "Certificate",
+    )
+
+    append_event(
+        request.name,
+        "Certificate Generated",
+        details={
+            "audit_certificate": request.audit_certificate,
+            "certificate_hash": first_pass["sha256_hash"],
+            "pass": 1,
+            "final_certificate": False,
+        },
+        document_hash=first_pass["sha256_hash"],
+    )
+
+    append_event(
+        request.name,
+        "Completed",
+        details={
+            "signed_pdf": request.signed_pdf,
+            "signed_pdf_hash": request.signed_pdf_hash,
+            "audit_certificate": request.audit_certificate,
+            "audit_certificate_hash": first_pass["sha256_hash"],
+        },
+        document_hash=request.signed_pdf_hash,
+    )
+
+    second_pass = generate_audit_certificate(request.name, suffix="final")
+
+    request.reload()
+    request.audit_certificate = second_pass["file_url"]
+    request.save(ignore_permissions=True)
+
+    create_file_hash(
+        request.name,
+        "Audit Certificate",
+        request.audit_certificate,
+        second_pass["sha256_hash"],
+        "Certificate",
+    )
+
+    append_event(
+        request.name,
+        "Certificate Generated",
+        details={
+            "audit_certificate": request.audit_certificate,
+            "certificate_hash": second_pass["sha256_hash"],
+            "previous_certificate_hash": first_pass["sha256_hash"],
+            "pass": 2,
+            "final_certificate": True,
+        },
+        document_hash=second_pass["sha256_hash"],
+    )
+
+    request.reload()
+    send_completion_notification(request)
+
+    submit_completed_request(request.name)
+
+
+def submit_completed_request(request_name):
+    request = frappe.get_doc("Frappe Sign Request", request_name)
+
+    if request.docstatus != 0:
+        return
+
+    if request.status != "Completed":
+        return
+
+    if not request.signed_pdf:
+        frappe.throw("Cannot submit a completed signing request without a signed PDF.")
+
+    if not request.audit_certificate:
+        frappe.throw("Cannot submit a completed signing request without an audit certificate.")
+
+    request.flags.ignore_permissions = True
+    request.submit()
+
+
 def advance_sequential_order(request):
     signer_rows = [row for row in request.signers if row.role == "Signer"]
 
     open_rows = [
-        row for row in signer_rows
+        row
+        for row in signer_rows
         if row.status in OPEN_SIGNER_STATUSES
     ]
 
@@ -615,7 +755,8 @@ def advance_sequential_order(request):
     current_order = request.current_signing_order or 1
 
     current_order_open_rows = [
-        row for row in open_rows
+        row
+        for row in open_rows
         if (row.signing_order or 1) == current_order
     ]
 
@@ -634,112 +775,10 @@ def advance_sequential_order(request):
         request.current_signing_order = next_orders[0]
 
 
-def notify_after_signing_action(request_name, completed_signer, action, reason=None):
-    request = frappe.get_doc("Frappe Sign Request", request_name)
-
-    recipients = get_notification_recipients(request, completed_signer)
-
-    if not recipients:
-        return
-
-    subject = f"Frappe Sign request {action.lower()}: {request.request_title}"
-
-    escaped_title = frappe.utils.escape_html(request.request_title or request.name)
-    escaped_signer = frappe.utils.escape_html(completed_signer.full_name or completed_signer.email)
-    escaped_action = frappe.utils.escape_html(action)
-
-    reason_html = ""
-
-    if reason:
-        reason_html = f"<p><strong>Reason:</strong> {frappe.utils.escape_html(reason)}</p>"
-
-    message = f"""
-        <p>Hello,</p>
-        <p><strong>{escaped_signer}</strong> has {escaped_action.lower()} the signing request:</p>
-        <p><strong>{escaped_title}</strong></p>
-        {reason_html}
-    """
-
-    next_links = build_next_signer_links(request)
-
-    if next_links:
-        message += """
-            <p>The following signer(s) may now continue:</p>
-            <ul>
-        """
-
-        for item in next_links:
-            message += f"""
-                <li>
-                    {frappe.utils.escape_html(item["label"])}:
-                    <a href="{frappe.utils.escape_html(item["link"])}">Open signing request</a>
-                </li>
-            """
-
-        message += "</ul>"
-
-    frappe.sendmail(
-        recipients=list(recipients),
-        subject=subject,
-        message=message,
-        now=False,
-    )
-
-
-def get_notification_recipients(request, completed_signer):
-    recipients = set()
-
-    if request.created_by:
-        creator_email = frappe.db.get_value("User", request.created_by, "email")
-        if creator_email:
-            recipients.add(creator_email)
-
-    for signer in request.signers:
-        if signer.role != "Signer":
-            continue
-
-        if signer.name == completed_signer.name:
-            continue
-
-        if signer.email:
-            recipients.add(signer.email)
-
-    return recipients
-
-
-def build_next_signer_links(request):
-    if request.status in CLOSED_REQUEST_STATUSES:
-        return []
-
-    items = []
-
-    for signer in request.signers:
-        if signer.role != "Signer":
-            continue
-
-        if signer.status not in OPEN_SIGNER_STATUSES:
-            continue
-
-        if request.signing_mode == "Sequential":
-            if (signer.signing_order or 1) != (request.current_signing_order or 1):
-                continue
-
-        if not signer.signing_link:
-            continue
-
-        items.append(
-            {
-                "label": signer.full_name or signer.email,
-                "link": signer.signing_link,
-            }
-        )
-
-    return items
-
-
 @frappe.whitelist(allow_guest=True)
 def get_source_pdf(token):
     signer, request = _get_signer_from_token(token)
+    ensure_signer_can_act(request, signer)
 
     pdf_url = request.signed_pdf or request.source_pdf
 

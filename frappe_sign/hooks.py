@@ -72,3 +72,9 @@ standard_portal_menu_items = [
         "reference_doctype": "Frappe Sign Request",
     },
 ]
+
+scheduler_events = {
+    "daily": [
+        "frappe_sign.utils.notifications.send_daily_signing_reminders",
+    ],
+}

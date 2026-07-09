@@ -7,8 +7,15 @@ from frappe.utils import add_days, get_url, now_datetime
 from frappe_sign.permissions import is_frappe_sign_sender
 from frappe_sign.utils.audit import append_event, sha256_bytes
 from frappe_sign.utils.files import attach_private_file, get_file_bytes
+from frappe_sign.utils.notifications import (
+    get_current_notification_signers,
+    send_signing_request_email,
+)
 from frappe_sign.utils.pdf import render_source_pdf
 from frappe_sign.utils.tokens import generate_signing_token, hash_signing_token
+
+
+CLOSED_SIGNER_STATUSES = ("Signed", "Declined", "Skipped")
 
 
 @frappe.whitelist()
@@ -63,7 +70,9 @@ def create_from_source(doctype, name, print_format=None):
 
     if source_config.required_sender_role:
         if source_config.required_sender_role not in frappe.get_roles():
-            frappe.throw(f"You need the {source_config.required_sender_role} role to create a signing request for this document.")
+            frappe.throw(
+                f"You need the {source_config.required_sender_role} role to create a signing request for this document."
+            )
 
     if not print_format:
         print_format = source_config.default_print_format
@@ -114,6 +123,7 @@ def create_from_source(doctype, name, print_format=None):
             "source_doctype": doctype,
             "source_name": name,
             "print_format": print_format,
+            "source_pdf": request.source_pdf,
         },
         document_hash=pdf_hash,
     )
@@ -147,16 +157,21 @@ def send_request(request_name):
 
     validate_ready_to_send(request)
 
-    for signer in request.signers:
-        if signer.role != "Signer":
-            continue
+    if not request.current_signing_order:
+        request.current_signing_order = 1
 
+    notified_signers = get_current_notification_signers(request)
+
+    if not notified_signers:
+        frappe.throw("No eligible signers are available to notify.")
+
+    for signer in notified_signers:
         signing_link = ensure_signer_link(request, signer)
 
         if signer.status in (None, "", "Pending"):
             signer.status = "Sent"
 
-        send_signing_email(request, signer, signing_link)
+        send_signing_request_email(request, signer, signing_link)
 
     request.status = "Sent"
     request.save(ignore_permissions=True)
@@ -166,11 +181,16 @@ def send_request(request_name):
         "Sent",
         details={
             "sent_by": frappe.session.user,
-            "signer_count": len([s for s in request.signers if s.role == "Signer"]),
+            "signer_count": len(notified_signers),
+            "signing_mode": request.signing_mode,
+            "current_signing_order": request.current_signing_order,
         },
     )
 
-    return {"status": "Sent"}
+    return {
+        "status": request.status,
+        "signer_count": len(notified_signers),
+    }
 
 
 @frappe.whitelist()
@@ -185,11 +205,8 @@ def resend_request(request_name):
 
     resent_count = 0
 
-    for signer in request.signers:
-        if signer.role != "Signer":
-            continue
-
-        if signer.status in ("Signed", "Declined", "Skipped"):
+    for signer in get_current_notification_signers(request):
+        if signer.status in CLOSED_SIGNER_STATUSES:
             continue
 
         signing_link = ensure_signer_link(request, signer)
@@ -197,7 +214,7 @@ def resend_request(request_name):
         if signer.status in (None, "", "Pending"):
             signer.status = "Sent"
 
-        send_signing_email(request, signer, signing_link)
+        send_signing_request_email(request, signer, signing_link)
         resent_count += 1
 
     request.save(ignore_permissions=True)
@@ -209,10 +226,15 @@ def resend_request(request_name):
             "resent_by": frappe.session.user,
             "resend": True,
             "signer_count": resent_count,
+            "signing_mode": request.signing_mode,
+            "current_signing_order": request.current_signing_order,
         },
     )
 
-    return {"status": request.status}
+    return {
+        "status": request.status,
+        "signer_count": resent_count,
+    }
 
 
 @frappe.whitelist()
@@ -254,13 +276,28 @@ def verify_tamper_status(request_name):
 
     if request.source_pdf and request.source_pdf_hash:
         current_source_hash = sha256_bytes(get_file_bytes(request.source_pdf))
+
         if current_source_hash != request.source_pdf_hash:
             failed = True
 
     if request.signed_pdf and request.signed_pdf_hash:
         current_signed_hash = sha256_bytes(get_file_bytes(request.signed_pdf))
+
         if current_signed_hash != request.signed_pdf_hash:
             failed = True
+
+    if request.audit_certificate:
+        latest_certificate_hash = get_latest_file_hash(
+            request.name,
+            request.audit_certificate,
+            "Certificate",
+        )
+
+        if latest_certificate_hash:
+            current_certificate_hash = sha256_bytes(get_file_bytes(request.audit_certificate))
+
+            if current_certificate_hash != latest_certificate_hash:
+                failed = True
 
     request.tamper_status = "Failed" if failed else "Passed"
     request.save(ignore_permissions=True)
@@ -273,37 +310,29 @@ def verify_tamper_status(request_name):
     return {"tamper_status": request.tamper_status}
 
 
+def get_latest_file_hash(request_name, file_url, hash_purpose=None):
+    filters = {
+        "frappe_sign_request": request_name,
+        "file_url": file_url,
+    }
+
+    if hash_purpose:
+        filters["hash_purpose"] = hash_purpose
+
+    return frappe.db.get_value(
+        "Frappe Sign File Hash",
+        filters,
+        "sha256_hash",
+        order_by="creation desc",
+    )
+
+
 def get_source_config(settings, doctype):
     for row in settings.configured_doctypes:
         if row.enabled and row.source_doctype == doctype:
             return row
 
     return None
-
-
-def send_signing_email(request, signer, signing_link):
-    subject = f"Signature requested: {request.request_title}"
-
-    escaped_name = frappe.utils.escape_html(signer.full_name or signer.email)
-    escaped_title = frappe.utils.escape_html(request.request_title)
-    escaped_link = frappe.utils.escape_html(signing_link)
-
-    message = f"""
-        <p>Hello {escaped_name},</p>
-        <p>You have been requested to sign the following document:</p>
-        <p><strong>{escaped_title}</strong></p>
-        <p>
-            <a href="{escaped_link}">Open signing request</a>
-        </p>
-        <p>This link is unique to you and should not be shared.</p>
-    """
-
-    frappe.sendmail(
-        recipients=[signer.email],
-        subject=subject,
-        message=message,
-        now=False,
-    )
 
 
 def create_file_hash(request_name, file_type, file_url, sha256_hash, hash_purpose):
@@ -350,7 +379,18 @@ def validate_ready_to_send(request):
         if not signer.email:
             frappe.throw("Each signer must have an Email.")
 
-    for field in request.fields:
+        if not signer.signing_order:
+            signer.signing_order = 1
+
+        if not signer.status:
+            signer.status = "Pending"
+
+    field_rows = list(request.fields or [])
+
+    if not field_rows:
+        frappe.throw("At least one signing field is required before sending.")
+
+    for field in field_rows:
         if field.field_type in ("Signature", "Initials"):
             if not field.signer:
                 frappe.throw("Each Signature and Initials field must be assigned to a signer.")
@@ -418,8 +458,11 @@ def get_signer_link(request_name, signer_row_name):
     if signer.role != "Signer":
         frappe.throw("Only signer rows have signing links.")
 
-    if signer.status in ("Signed", "Declined", "Skipped"):
+    if signer.status in CLOSED_SIGNER_STATUSES:
         frappe.throw(f"Cannot copy a signing link for a signer with status {signer.status}.")
+
+    if request.status in ("Completed", "Declined", "Expired", "Cancelled", "Failed"):
+        frappe.throw(f"Cannot copy a signing link for a request with status {request.status}.")
 
     signing_link = ensure_signer_link(request, signer)
 

@@ -301,8 +301,119 @@ class FrappeSignDesigner {
         dialog.show();
     }
 
+    async ensure_pdf_ready() {
+        const response = await frappe.call({
+            method: "frappe_sign.api.designer.ensure_designer_pdf",
+            args: {
+                request_name: this.request_name,
+            },
+            freeze: true,
+            freeze_message: __("Preparing source PDF..."),
+        });
+
+        const result = response.message;
+
+        if (!result) {
+            frappe.msgprint(__("Could not prepare the source PDF."));
+            return false;
+        }
+
+        if (result.status === "ready") {
+            return true;
+        }
+
+        if (result.status === "upload_required") {
+            return await this.prompt_for_source_pdf_upload();
+        }
+
+        frappe.msgprint(result.message || __("Could not prepare the source PDF."));
+        return false;
+    }
+
+    prompt_for_source_pdf_upload() {
+        return new Promise((resolve) => {
+            let resolved = false;
+
+            const dialog = new frappe.ui.Dialog({
+                title: __("Upload Source PDF"),
+                fields: [
+                    {
+                        fieldname: "help",
+                        fieldtype: "HTML",
+                        options: `
+                            <p>
+                                ${__("This signing request does not have a source PDF yet. Please upload the PDF to continue to the Designer.")}
+                            </p>
+                        `,
+                    },
+                    {
+                        fieldname: "pdf_file",
+                        fieldtype: "Attach",
+                        label: __("PDF File"),
+                        reqd: 1,
+                    },
+                ],
+                primary_action_label: __("Upload and Continue"),
+                primary_action: async (values) => {
+                    if (!values.pdf_file) {
+                        frappe.msgprint(__("Please upload a PDF file."));
+                        return;
+                    }
+
+                    if (!values.pdf_file.toLowerCase().endsWith(".pdf")) {
+                        frappe.msgprint(__("Only PDF files are supported."));
+                        return;
+                    }
+
+                    try {
+                        await frappe.call({
+                            method: "frappe_sign.api.designer.upload_designer_source_pdf_from_file_url",
+                            args: {
+                                request_name: this.request_name,
+                                file_url: values.pdf_file,
+                            },
+                            freeze: true,
+                            freeze_message: __("Attaching source PDF..."),
+                        });
+
+                        resolved = true;
+                        dialog.hide();
+
+                        frappe.show_alert({
+                            message: __("Source PDF attached."),
+                            indicator: "green",
+                        });
+
+                        resolve(true);
+                    } catch (error) {
+                        console.error(error);
+                        frappe.msgprint(__("Could not attach the source PDF."));
+                        resolve(false);
+                    }
+                },
+                onhide: () => {
+                    if (!resolved) {
+                        resolve(false);
+                    }
+                },
+            });
+
+            dialog.show();
+        });
+    }
+
     async load_request() {
         if (!this.request_name) {
+            return;
+        }
+
+        if (!(await this.ensure_pdf_ready())) {
+            this.page.main.find("#frappe-sign-pdf-pages").html(`
+                <div class="frappe-sign-message frappe-sign-message-error">
+                    <h2>${__("Source PDF Required")}</h2>
+                    <p>${__("A source PDF is required before the Designer can load.")}</p>
+                </div>
+            `);
             return;
         }
 
