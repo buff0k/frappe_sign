@@ -151,13 +151,12 @@ def send_request(request_name):
         if signer.role != "Signer":
             continue
 
-        token = generate_signing_token()
-        signer.access_token_hash = hash_signing_token(token)
-        signer.last_token_generated_on = now_datetime()
-        signer.token_expires_on = request.expires_on
-        signer.status = "Sent"
+        signing_link = ensure_signer_link(request, signer)
 
-        send_signing_email(request, signer, token)
+        if signer.status in (None, "", "Pending"):
+            signer.status = "Sent"
+
+        send_signing_email(request, signer, signing_link)
 
     request.status = "Sent"
     request.save(ignore_permissions=True)
@@ -184,22 +183,22 @@ def resend_request(request_name):
     if request.status not in ("Sent", "Viewed", "Partially Signed"):
         frappe.throw("Only active requests can be resent.")
 
+    resent_count = 0
+
     for signer in request.signers:
         if signer.role != "Signer":
             continue
 
-        if signer.status == "Signed":
+        if signer.status in ("Signed", "Declined", "Skipped"):
             continue
 
-        token = generate_signing_token()
-        signer.access_token_hash = hash_signing_token(token)
-        signer.last_token_generated_on = now_datetime()
-        signer.token_expires_on = request.expires_on
+        signing_link = ensure_signer_link(request, signer)
 
-        if signer.status == "Pending":
+        if signer.status in (None, "", "Pending"):
             signer.status = "Sent"
 
-        send_signing_email(request, signer, token)
+        send_signing_email(request, signer, signing_link)
+        resent_count += 1
 
     request.save(ignore_permissions=True)
 
@@ -209,6 +208,7 @@ def resend_request(request_name):
         details={
             "resent_by": frappe.session.user,
             "resend": True,
+            "signer_count": resent_count,
         },
     )
 
@@ -281,17 +281,19 @@ def get_source_config(settings, doctype):
     return None
 
 
-def send_signing_email(request, signer, token):
-    signing_url = get_signing_url(token)
-
+def send_signing_email(request, signer, signing_link):
     subject = f"Signature requested: {request.request_title}"
 
+    escaped_name = frappe.utils.escape_html(signer.full_name or signer.email)
+    escaped_title = frappe.utils.escape_html(request.request_title)
+    escaped_link = frappe.utils.escape_html(signing_link)
+
     message = f"""
-        <p>Hello {frappe.utils.escape_html(signer.full_name or signer.email)},</p>
+        <p>Hello {escaped_name},</p>
         <p>You have been requested to sign the following document:</p>
-        <p><strong>{frappe.utils.escape_html(request.request_title)}</strong></p>
+        <p><strong>{escaped_title}</strong></p>
         <p>
-            <a href="{signing_url}">Open signing request</a>
+            <a href="{escaped_link}">Open signing request</a>
         </p>
         <p>This link is unique to you and should not be shared.</p>
     """
@@ -336,29 +338,17 @@ def validate_ready_to_send(request):
     if not signer_rows:
         frappe.throw("At least one signer is required before sending.")
 
-    if not request.fields:
-        frappe.throw("At least one signing field is required before sending.")
-
-    required_fields = [row for row in request.fields if row.required]
-
-    if not required_fields:
-        frappe.throw("At least one required signing field is required before sending.")
-
     signer_names = {row.name for row in signer_rows}
 
     for signer in signer_rows:
-        if signer.signer_type == "User" and not signer.user:
-            frappe.throw("Each User signer must have a linked User.")
+        if not signer.signer:
+            frappe.throw("Each signer must have a Frappe Sign Profile.")
 
-        if signer.signer_type == "External":
-            if not signer.full_name:
-                frappe.throw("Each External signer must have a Full Name.")
-
-            if not signer.email:
-                frappe.throw("Each External signer must have an Email.")
+        if not signer.full_name:
+            frappe.throw("Each signer must have a Full Name.")
 
         if not signer.email:
-            frappe.throw("Each signer must have an email address.")
+            frappe.throw("Each signer must have an Email.")
 
     for field in request.fields:
         if field.field_type in ("Signature", "Initials"):
@@ -383,3 +373,61 @@ def validate_ready_to_send(request):
 
 def get_signing_url(token):
     return get_url(f"/sign/{token}")
+
+
+def ensure_signer_link(request, signer):
+    """
+    Ensures a signer has one stable active signing link.
+
+    This does not rotate the token if a signing_link and access_token_hash
+    already exist.
+    """
+    if signer.signing_link and signer.access_token_hash:
+        return signer.signing_link
+
+    token = generate_signing_token()
+
+    signer.access_token_hash = hash_signing_token(token)
+    signer.signing_link = get_signing_url(token)
+    signer.last_token_generated_on = now_datetime()
+    signer.token_expires_on = request.expires_on
+
+    if signer.status in (None, "", "Pending"):
+        signer.status = "Sent"
+
+    return signer.signing_link
+
+
+@frappe.whitelist()
+def get_signer_link(request_name, signer_row_name):
+    request = frappe.get_doc("Frappe Sign Request", request_name)
+
+    if not frappe.has_permission("Frappe Sign Request", "write", doc=request):
+        frappe.throw("You do not have permission to access this signing request.")
+
+    signer = None
+
+    for row in request.signers:
+        if row.name == signer_row_name:
+            signer = row
+            break
+
+    if not signer:
+        frappe.throw("Signer row not found.")
+
+    if signer.role != "Signer":
+        frappe.throw("Only signer rows have signing links.")
+
+    if signer.status in ("Signed", "Declined", "Skipped"):
+        frappe.throw(f"Cannot copy a signing link for a signer with status {signer.status}.")
+
+    signing_link = ensure_signer_link(request, signer)
+
+    request.save(ignore_permissions=True)
+
+    return {
+        "signer": signer.name,
+        "email": signer.email,
+        "full_name": signer.full_name,
+        "signing_link": signing_link,
+    }

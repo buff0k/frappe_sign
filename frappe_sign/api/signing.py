@@ -7,6 +7,7 @@ from frappe.utils import now_datetime
 
 from frappe_sign.utils.audit import append_event
 from frappe_sign.utils.tokens import hash_signing_token
+from frappe_sign.utils.files import get_file_bytes
 
 
 def _get_signer_from_token(token):
@@ -215,15 +216,10 @@ def _refresh_request_status(request):
 
 @frappe.whitelist(allow_guest=True)
 def get_source_pdf(token):
-    request, signer = get_request_and_signer_from_token(token)
-
-    if not request or not signer:
-        frappe.throw("Invalid or expired signing token.")
+    signer, request = _get_signer_from_token(token)
 
     if not request.source_pdf:
         frappe.throw("No source PDF is attached to this signing request.")
-
-    from frappe_sign.utils.files import get_file_bytes
 
     pdf_bytes = get_file_bytes(request.source_pdf)
 

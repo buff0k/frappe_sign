@@ -7,12 +7,12 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "signer_type",
-  "user",
+  "signer",
   "full_name",
   "email",
   "role",
   "signing_order",
+  "signing_link",
   "status",
   "access_token_hash",
   "last_token_generated_on",
@@ -30,40 +30,22 @@
  ],
  "fields": [
   {
-   "default": "User",
-   "fieldname": "signer_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Signer Type",
-   "options": "User\nExternal"
-  },
-  {
-   "depends_on": "eval:doc.signer_type==\"User\"",
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "User",
-   "mandatory_depends_on": "eval:doc.signer_type==\"User\"",
-   "options": "User"
-  },
-  {
    "fieldname": "full_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Full Name",
-   "mandatory_depends_on": "eval:doc.signer_type==\"External\""
+   "read_only": 1
   },
   {
    "fieldname": "email",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Email",
-   "mandatory_depends_on": "eval:doc.signer_type==\"External\"",
-   "options": "Email"
+   "options": "Email",
+   "read_only": 1
   },
   {
    "default": "Signer",
@@ -168,13 +150,32 @@
    "fieldtype": "Data",
    "label": "Initials Snapshot Hash",
    "read_only": 1
+  },
+  {
+   "fieldname": "signing_link",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Signing Link",
+   "options": "URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signer",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Signer",
+   "options": "Frappe Sign Profile",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-07 14:12:36.644089",
+ "modified": "2026-07-08 12:15:35.472481",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Signer",

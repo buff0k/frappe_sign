@@ -107,6 +107,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "fieldname": "print_format",
    "fieldtype": "Link",
    "label": "Print Format",
@@ -125,6 +126,8 @@
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nPrepared\nSent\nViewed\nPartially Signed\nCompleted\nDeclined\nExpired\nCancelled\nFailed"
   },
@@ -292,7 +295,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-07 14:20:00.708832",
+ "modified": "2026-07-08 13:14:26.995128",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Request",

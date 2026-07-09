@@ -107,42 +107,38 @@ class FrappeSignRequest(Document):
             frappe.throw(f"Invalid Frappe Sign status: {self.status}")
 
     def validate_signers(self):
+        seen_profiles = set()
         seen_emails = set()
 
         for signer in self.signers:
-            if not signer.signer_type:
-                signer.signer_type = "User"
+            if not signer.signer:
+                frappe.throw("Each signer row requires a Frappe Sign Profile.")
 
-            if signer.signer_type == "User":
-                if not signer.user:
-                    frappe.throw("User signer requires a linked User.")
+            profile = frappe.get_doc("Frappe Sign Profile", signer.signer)
 
-                user = frappe.get_doc("User", signer.user)
+            if not profile.active:
+                frappe.throw(f"Signer profile {profile.name} is not active.")
 
-                if not user.email:
-                    frappe.throw(f"User {signer.user} does not have an email address.")
+            if not profile.full_name:
+                frappe.throw(f"Signer profile {profile.name} does not have a Full Name.")
 
-                signer.email = user.email
-                signer.full_name = user.full_name
+            if not profile.email:
+                frappe.throw(f"Signer profile {profile.name} does not have an Email.")
 
-            if signer.signer_type == "External":
-                signer.user = None
+            if signer.signer in seen_profiles:
+                frappe.throw(f"Duplicate signer profile: {profile.name}")
 
-                if not signer.full_name:
-                    frappe.throw("External signer requires Full Name.")
+            seen_profiles.add(signer.signer)
 
-                if not signer.email:
-                    frappe.throw("External signer requires Email.")
+            normalized_email = profile.email.strip().lower()
 
-            if not signer.email:
-                frappe.throw("Each signer requires an email address.")
+            if normalized_email in seen_emails:
+                frappe.throw(f"Duplicate signer email: {profile.email}")
 
-            normalized = signer.email.strip().lower()
+            seen_emails.add(normalized_email)
 
-            if normalized in seen_emails:
-                frappe.throw(f"Duplicate signer email: {signer.email}")
-
-            seen_emails.add(normalized)
+            signer.full_name = profile.full_name
+            signer.email = profile.email
 
             if not signer.role:
                 signer.role = "Signer"

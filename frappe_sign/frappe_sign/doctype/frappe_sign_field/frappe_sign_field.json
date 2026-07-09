@@ -30,12 +30,16 @@
   {
    "fieldname": "signer_label",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Signer Label"
   },
   {
    "default": "Signature",
    "fieldname": "field_type",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Field Type",
    "options": "Signature\nInitials\nName\nEmail\nDate\nText\nCheckbox"
   },
@@ -43,16 +47,22 @@
    "default": "1",
    "fieldname": "page",
    "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Page"
   },
   {
    "fieldname": "x_ratio",
    "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "X Ratio"
   },
   {
    "fieldname": "y_ratio",
    "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Y Ratio"
   },
   {
@@ -99,7 +109,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-07 11:51:12.775895",
+ "modified": "2026-07-08 13:43:42.738442",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Field",

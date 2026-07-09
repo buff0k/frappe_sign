@@ -265,42 +265,30 @@ class FrappeSignPortal {
     }
 
     async decline_signing() {
-        const dialog = new frappe.ui.Dialog({
-            title: __("Decline Signing"),
-            fields: [
-                {
-                    fieldname: "reason",
-                    fieldtype: "Small Text",
-                    label: __("Reason"),
-                    reqd: 1,
-                },
-            ],
-            primary_action_label: __("Decline"),
-            primary_action: async (values) => {
-                dialog.hide();
+        const reason = window.prompt(__("Please enter a reason for declining this signing request."));
 
-                await frappe.call({
-                    method: "frappe_sign.api.signing.decline_signing",
-                    args: {
-                        token: this.token,
-                        reason: values.reason,
-                    },
-                    freeze: true,
-                    freeze_message: __("Declining signing request..."),
-                });
+        if (!reason) {
+            return;
+        }
 
-                frappe.msgprint({
-                    title: __("Declined"),
-                    message: __("The signing request has been declined."),
-                    indicator: "red",
-                });
-
-                $("#frappe-sign-complete").prop("disabled", true);
-                $("#frappe-sign-decline").prop("disabled", true);
+        await frappe.call({
+            method: "frappe_sign.api.signing.decline_signing",
+            args: {
+                token: this.token,
+                reason: reason,
             },
+            freeze: true,
+            freeze_message: __("Declining signing request..."),
         });
 
-        dialog.show();
+        frappe.msgprint({
+            title: __("Declined"),
+            message: __("The signing request has been declined."),
+            indicator: "red",
+        });
+
+        $("#frappe-sign-complete").prop("disabled", true);
+        $("#frappe-sign-decline").prop("disabled", true);
     }
 
     show_error(message) {

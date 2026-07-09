@@ -31,8 +31,7 @@ def get_designer_context(request_name):
         "signers": [
             {
                 "name": signer.name,
-                "signer_type": signer.signer_type,
-                "user": signer.user,
+                "signer": signer.signer,
                 "full_name": signer.full_name,
                 "email": signer.email,
                 "role": signer.role,
@@ -79,11 +78,10 @@ def save_fields(request_name, fields_json):
 
     for field in fields:
         signer = field.get("signer")
+        field_type = field.get("field_type")
 
         if signer and signer not in valid_signer_rows:
             frappe.throw("Invalid signer selected for a signing field.")
-
-        field_type = field.get("field_type")
 
         if field_type in ("Signature", "Initials") and not signer:
             frappe.throw("Signature and Initials fields must be assigned to a signer.")

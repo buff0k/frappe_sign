@@ -222,6 +222,23 @@
     font-weight: 600;
 }
 
+/* Signer selection
+   ========================================================================== */
+
+.frappe-sign-signer-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.frappe-sign-signer-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--frappe-sign-border);
+    flex: 0 0 16px;
+}
+
 /* Field palette
    ========================================================================== */
 
@@ -311,13 +328,44 @@
     cursor: crosshair;
 }
 
+.frappe-sign-page-overlay.show-grid {
+    background-image:
+        linear-gradient(to right, rgba(36, 144, 239, 0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(36, 144, 239, 0.18) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.frappe-sign-page-overlay.drop-target {
+    outline: 2px solid var(--frappe-sign-primary);
+    outline-offset: -2px;
+}
+
+.frappe-sign-alignment-guide {
+    position: absolute;
+    z-index: 40;
+    pointer-events: none;
+    background: #e24c4b;
+}
+
+.frappe-sign-alignment-guide.vertical {
+    top: 0;
+    bottom: 0;
+    width: 1px;
+}
+
+.frappe-sign-alignment-guide.horizontal {
+    left: 0;
+    right: 0;
+    height: 1px;
+}
+
 /* Placed designer fields
    ========================================================================== */
 
 .frappe-sign-field-box {
     position: absolute;
     z-index: 20;
-    border: 2px solid var(--frappe-sign-primary);
+    border: 2px solid var(--frappe-sign-field-color, var(--frappe-sign-primary));
     background: rgba(36, 144, 239, 0.12);
     border-radius: 4px;
     padding: 4px;
@@ -372,7 +420,7 @@
     bottom: 0;
     width: 13px;
     height: 13px;
-    background: var(--frappe-sign-primary);
+    background: var(--frappe-sign-field-color, var(--frappe-sign-primary));
     cursor: nwse-resize;
     border-top-left-radius: 4px;
     z-index: 30;
@@ -431,6 +479,19 @@
     background: #f8fafc;
 }
 
+.frappe-sign-field-row-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.frappe-sign-field-row-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid var(--frappe-sign-border);
+    flex: 0 0 12px;
+}
+
 /* Drag ghost
    ========================================================================== */
 
@@ -438,13 +499,14 @@
     position: fixed;
     z-index: 99999;
     pointer-events: none;
-    border: 2px solid var(--frappe-sign-primary);
-    background: rgba(36, 144, 239, 0.16);
+    border: 2px solid var(--frappe-sign-field-color, var(--frappe-sign-primary));
+    background: rgba(36, 144, 239, 0.12);
     color: #0f172a;
-    border-radius: 6px;
-    padding: 8px 12px;
+    border-radius: 4px;
+    padding: 4px;
     font-weight: 700;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    box-sizing: border-box;
 }
 
 /* Responsive fallback

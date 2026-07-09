@@ -24,17 +24,32 @@ class FrappeSignDesigner {
         this.pdf_doc = null;
         this.scale = 1.0;
 
+        this.grid_size = 20;
+        this.snap_to_grid = true;
+        this.alignment_threshold = 6;
+
         this.selected_signer = null;
-        this.selected_field_type = "Signature";
+        this.selected_field_type = null;
+
+        this.signer_colors = [
+            "#2490ef",
+            "#2e9d64",
+            "#f59e0b",
+            "#8b5cf6",
+            "#ef4444",
+            "#06b6d4",
+            "#ec4899",
+            "#64748b",
+        ];
 
         this.palette_drag = null;
         this.ghost = null;
+        this.suppress_pdf_click_until = 0;
 
         this.is_dirty = false;
         this.is_read_only = false;
 
         this.make();
-        this.inject_designer_css();
 
         this.load_pdfjs()
             .then(() => this.resolve_route())
@@ -70,6 +85,10 @@ class FrappeSignDesigner {
                         <button class="btn btn-default" id="frappe-sign-reload">
                             ${__("Reload")}
                         </button>
+
+                        <button class="btn btn-primary" id="frappe-sign-toggle-snap">
+                            ${__("Snap")}: ${__("On")}
+                        </button>
                     </div>
 
                     <div class="frappe-sign-zoom-controls">
@@ -90,7 +109,10 @@ class FrappeSignDesigner {
 
                         <div class="frappe-sign-card">
                             <h4>${__("Signer")}</h4>
-                            <select class="form-control" id="frappe-sign-active-signer"></select>
+                            <div class="frappe-sign-signer-select-row">
+                                <span id="frappe-sign-active-signer-color" class="frappe-sign-signer-color"></span>
+                                <select class="form-control" id="frappe-sign-active-signer"></select>
+                            </div>
                         </div>
 
                         <div class="frappe-sign-card">
@@ -165,6 +187,18 @@ class FrappeSignDesigner {
             await this.load_request();
         });
 
+        this.page.main.find("#frappe-sign-toggle-snap").on("click", () => {
+            this.snap_to_grid = !this.snap_to_grid;
+            this.update_snap_button();
+
+            frappe.show_alert({
+                message: this.snap_to_grid
+                    ? __("Snap-to-grid enabled.")
+                    : __("Snap-to-grid disabled."),
+                indicator: this.snap_to_grid ? "green" : "gray",
+            });
+        });
+
         this.page.main.find("#frappe-sign-zoom-in").on("click", async () => {
             this.scale = Math.min(this.scale + 0.15, 2.5);
             await this.render_pdf();
@@ -177,6 +211,7 @@ class FrappeSignDesigner {
 
         this.page.main.find("#frappe-sign-active-signer").on("change", () => {
             this.selected_signer = this.page.main.find("#frappe-sign-active-signer").val();
+            this.update_active_signer_color();
         });
 
         this.page.main.find(".frappe-sign-palette-item").on("mousedown", (event) => {
@@ -287,6 +322,7 @@ class FrappeSignDesigner {
         this.is_dirty = false;
         this.is_read_only = !["Draft", "Prepared"].includes(this.request.status);
 
+        this.clear_selected_field_type();
         this.render_summary();
         this.render_signers();
         this.render_toolbar_state();
@@ -294,6 +330,9 @@ class FrappeSignDesigner {
 
         await this.load_pdf_document();
         await this.render_pdf();
+
+        this.mark_clean();
+        this.update_snap_button();
     }
 
     render_summary() {
@@ -321,11 +360,12 @@ class FrappeSignDesigner {
         if (!this.signers.length) {
             select.append(`<option value="">${__("No signers available")}</option>`);
             this.selected_signer = null;
+            this.update_active_signer_color();
             return;
         }
 
         for (const signer of this.signers) {
-            const label = signer.full_name || signer.email || signer.user || signer.name;
+            const label = signer.full_name || signer.email || signer.signer || signer.name;
 
             select.append(`
                 <option value="${frappe.utils.escape_html(signer.name)}">
@@ -339,12 +379,40 @@ class FrappeSignDesigner {
         }
 
         select.val(this.selected_signer);
+        this.update_active_signer_color();
     }
 
     render_toolbar_state() {
         this.page.main.find("#frappe-sign-save-fields").prop("disabled", this.is_read_only);
         this.page.main.find("#frappe-sign-send-request").prop("disabled", this.is_read_only);
         this.page.main.find(".frappe-sign-palette-item").toggleClass("disabled", this.is_read_only);
+        this.update_snap_button();
+    }
+
+    update_active_signer_color() {
+        const color = this.selected_signer ? this.get_signer_color(this.selected_signer) : "transparent";
+        this.page.main.find("#frappe-sign-active-signer-color").css("background", color);
+    }
+
+    update_snap_button() {
+        this.page.main
+            .find("#frappe-sign-toggle-snap")
+            .text(`${__("Snap")}: ${this.snap_to_grid ? __("On") : __("Off")}`)
+            .toggleClass("btn-primary", this.snap_to_grid)
+            .toggleClass("btn-default", !this.snap_to_grid);
+    }
+
+    clear_selected_field_type() {
+        this.selected_field_type = null;
+        this.page.main.find(".frappe-sign-palette-item").removeClass("active");
+    }
+
+    suppress_next_pdf_click() {
+        this.suppress_pdf_click_until = Date.now() + 350;
+    }
+
+    should_suppress_pdf_click() {
+        return Date.now() < this.suppress_pdf_click_until;
     }
 
     async load_pdf_document() {
@@ -467,6 +535,12 @@ class FrappeSignDesigner {
                 return;
             }
 
+            if (this.should_suppress_pdf_click()) {
+                event.stopPropagation();
+                event.preventDefault();
+                return;
+            }
+
             if ($(event.target).closest(".frappe-sign-field-box").length) {
                 return;
             }
@@ -505,14 +579,21 @@ class FrappeSignDesigner {
             field_type: field_type,
             start_x: event.clientX,
             start_y: event.clientY,
+            drop_overlay: null,
+            drop_left: null,
+            drop_top: null,
         };
 
         this.create_drag_ghost(field_type, event.clientX, event.clientY);
+        this.toggle_grid_lines(true);
+        this.move_palette_drag(event);
+        this.highlight_overlay_at_point(event.clientX, event.clientY);
 
         $(document).off(".frappe_sign_palette_drag");
 
         $(document).on("mousemove.frappe_sign_palette_drag", (move_event) => {
             this.move_palette_drag(move_event);
+            this.highlight_overlay_at_point(move_event.clientX, move_event.clientY);
         });
 
         $(document).on("mouseup.frappe_sign_palette_drag", (up_event) => {
@@ -525,17 +606,30 @@ class FrappeSignDesigner {
     create_drag_ghost(field_type, client_x, client_y) {
         this.remove_drag_ghost();
 
+        const size = this.get_default_field_size(field_type);
+        const signer_color = this.get_signer_color(this.selected_signer);
+
         this.ghost = $(`
             <div class="frappe-sign-drag-ghost">
-                ${frappe.utils.escape_html(field_type)}
+                <div class="frappe-sign-field-box-label">
+                    ${frappe.utils.escape_html(field_type)}
+                </div>
+                <div class="frappe-sign-field-box-signer">
+                    ${frappe.utils.escape_html(this.get_signer_label(this.selected_signer))}
+                </div>
             </div>
         `);
 
         $("body").append(this.ghost);
 
         this.ghost.css({
-            left: `${client_x + 12}px`,
-            top: `${client_y + 12}px`,
+            left: `${client_x}px`,
+            top: `${client_y}px`,
+            width: `${size.width}px`,
+            height: `${size.height}px`,
+            borderColor: signer_color,
+            backgroundColor: `${signer_color}22`,
+            "--frappe-sign-field-color": signer_color,
         });
     }
 
@@ -544,9 +638,44 @@ class FrappeSignDesigner {
             return;
         }
 
+        const field_type = this.palette_drag.field_type;
+        const size = this.get_default_field_size(field_type);
+        const overlay = this.get_overlay_at_point(event.clientX, event.clientY);
+
+        if (!overlay) {
+            this.palette_drag.drop_overlay = null;
+            this.palette_drag.drop_left = null;
+            this.palette_drag.drop_top = null;
+
+            this.ghost.css({
+                left: `${event.clientX}px`,
+                top: `${event.clientY}px`,
+            });
+
+            return;
+        }
+
+        const rect = overlay[0].getBoundingClientRect();
+
+        let left = event.clientX - rect.left;
+        let top = event.clientY - rect.top;
+
+        const snapped = this.snap_position(
+            left,
+            top,
+            rect.width,
+            rect.height,
+            size.width,
+            size.height
+        );
+
+        this.palette_drag.drop_overlay = overlay;
+        this.palette_drag.drop_left = snapped.left;
+        this.palette_drag.drop_top = snapped.top;
+
         this.ghost.css({
-            left: `${event.clientX + 12}px`,
-            top: `${event.clientY + 12}px`,
+            left: `${rect.left + snapped.left}px`,
+            top: `${rect.top + snapped.top}px`,
         });
     }
 
@@ -556,14 +685,34 @@ class FrappeSignDesigner {
         }
 
         const field_type = this.palette_drag.field_type;
-        const overlay = this.get_overlay_at_point(event.clientX, event.clientY);
+        const overlay = this.palette_drag.drop_overlay || this.get_overlay_at_point(event.clientX, event.clientY);
 
         if (overlay) {
-            this.add_field_at_point(overlay, event.clientX, event.clientY, field_type);
+            if (
+                this.palette_drag.drop_overlay &&
+                this.palette_drag.drop_overlay[0] === overlay[0] &&
+                this.palette_drag.drop_left !== null &&
+                this.palette_drag.drop_top !== null
+            ) {
+                this.add_field_at_position(
+                    overlay,
+                    this.palette_drag.drop_left,
+                    this.palette_drag.drop_top,
+                    field_type
+                );
+            } else {
+                this.add_field_at_point(overlay, event.clientX, event.clientY, field_type, {
+                    placement: "top-left",
+                });
+            }
         }
 
         this.palette_drag = null;
         this.remove_drag_ghost();
+        this.toggle_grid_lines(false);
+        this.page.main.find(".frappe-sign-page-overlay").removeClass("drop-target");
+        this.clear_selected_field_type();
+        this.suppress_next_pdf_click();
 
         $(document).off(".frappe_sign_palette_drag");
     }
@@ -572,6 +721,20 @@ class FrappeSignDesigner {
         if (this.ghost) {
             this.ghost.remove();
             this.ghost = null;
+        }
+    }
+
+    toggle_grid_lines(show) {
+        this.page.main.find(".frappe-sign-page-overlay").toggleClass("show-grid", !!show);
+    }
+
+    highlight_overlay_at_point(client_x, client_y) {
+        this.page.main.find(".frappe-sign-page-overlay").removeClass("drop-target");
+
+        const overlay = this.get_overlay_at_point(client_x, client_y);
+
+        if (overlay) {
+            overlay.addClass("drop-target");
         }
     }
 
@@ -594,7 +757,25 @@ class FrappeSignDesigner {
         return null;
     }
 
-    add_field_at_point(overlay, client_x, client_y, field_type) {
+    add_field_at_point(overlay, client_x, client_y, field_type, options = {}) {
+        const rect = overlay[0].getBoundingClientRect();
+        const default_size = this.get_default_field_size(field_type);
+
+        let left;
+        let top;
+
+        if (options.placement === "top-left") {
+            left = client_x - rect.left;
+            top = client_y - rect.top;
+        } else {
+            left = client_x - rect.left - default_size.width / 2;
+            top = client_y - rect.top - default_size.height / 2;
+        }
+
+        this.add_field_at_position(overlay, left, top, field_type);
+    }
+
+    add_field_at_position(overlay, left, top, field_type) {
         if (this.is_read_only) {
             return;
         }
@@ -607,11 +788,20 @@ class FrappeSignDesigner {
         const rect = overlay[0].getBoundingClientRect();
         const default_size = this.get_default_field_size(field_type);
 
-        const left = client_x - rect.left - default_size.width / 2;
-        const top = client_y - rect.top - default_size.height / 2;
+        let safe_left = Math.max(0, Math.min(left, rect.width - default_size.width));
+        let safe_top = Math.max(0, Math.min(top, rect.height - default_size.height));
 
-        const safe_left = Math.max(0, Math.min(left, rect.width - default_size.width));
-        const safe_top = Math.max(0, Math.min(top, rect.height - default_size.height));
+        const snapped = this.snap_position(
+            safe_left,
+            safe_top,
+            rect.width,
+            rect.height,
+            default_size.width,
+            default_size.height
+        );
+
+        safe_left = snapped.left;
+        safe_top = snapped.top;
 
         const field = {
             signer: this.selected_signer,
@@ -631,6 +821,8 @@ class FrappeSignDesigner {
         this.mark_dirty();
         this.render_existing_fields();
         this.render_field_list();
+        this.clear_selected_field_type();
+        this.suppress_next_pdf_click();
     }
 
     get_default_field_size(field_type) {
@@ -659,6 +851,7 @@ class FrappeSignDesigner {
 
             const width = overlay.width();
             const height = overlay.height();
+            const signer_color = this.get_signer_color(field.signer);
 
             const box = $(`
                 <div class="frappe-sign-field-box" data-index="${index}">
@@ -682,6 +875,9 @@ class FrappeSignDesigner {
                 top: `${field.y_ratio * height}px`,
                 width: `${field.width_ratio * width}px`,
                 height: `${field.height_ratio * height}px`,
+                borderColor: signer_color,
+                backgroundColor: `${signer_color}22`,
+                "--frappe-sign-field-color": signer_color,
             });
 
             overlay.append(box);
@@ -696,6 +892,8 @@ class FrappeSignDesigner {
                     this.mark_dirty();
                     this.render_existing_fields();
                     this.render_field_list();
+                    this.clear_selected_field_type();
+                    this.suppress_next_pdf_click();
                 });
             }
         });
@@ -707,6 +905,7 @@ class FrappeSignDesigner {
         let start_y = 0;
         let start_left = 0;
         let start_top = 0;
+        let moving_index = null;
 
         box.off("mousedown.frappe_sign_field_drag");
 
@@ -719,11 +918,17 @@ class FrappeSignDesigner {
                 return;
             }
 
+            this.clear_selected_field_type();
+            this.suppress_next_pdf_click();
+
             is_dragging = true;
             start_x = event.clientX;
             start_y = event.clientY;
             start_left = parseFloat(box.css("left"));
             start_top = parseFloat(box.css("top"));
+            moving_index = cint(box.attr("data-index"));
+
+            this.toggle_grid_lines(true);
 
             $(document).off(".frappe_sign_field_drag");
 
@@ -740,8 +945,30 @@ class FrappeSignDesigner {
                 let new_left = start_left + (move_event.clientX - start_x);
                 let new_top = start_top + (move_event.clientY - start_y);
 
-                new_left = Math.max(0, Math.min(new_left, overlay_width - box_width));
-                new_top = Math.max(0, Math.min(new_top, overlay_height - box_height));
+                const snapped = this.snap_position(
+                    new_left,
+                    new_top,
+                    overlay_width,
+                    overlay_height,
+                    box_width,
+                    box_height
+                );
+
+                new_left = snapped.left;
+                new_top = snapped.top;
+
+                const aligned = this.get_alignment_snap(
+                    overlay,
+                    field,
+                    moving_index,
+                    new_left,
+                    new_top,
+                    box_width,
+                    box_height
+                );
+
+                new_left = Math.max(0, Math.min(aligned.left, overlay_width - box_width));
+                new_top = Math.max(0, Math.min(aligned.top, overlay_height - box_height));
 
                 box.css({
                     left: `${new_left}px`,
@@ -751,16 +978,26 @@ class FrappeSignDesigner {
                 field.x_ratio = this.round_ratio(new_left / overlay_width);
                 field.y_ratio = this.round_ratio(new_top / overlay_height);
 
+                this.show_alignment_guides(overlay, aligned.guides);
                 this.mark_dirty();
             });
 
-            $(document).on("mouseup.frappe_sign_field_drag", () => {
+            $(document).on("mouseup.frappe_sign_field_drag", (up_event) => {
                 if (is_dragging) {
                     is_dragging = false;
+                    moving_index = null;
                     this.render_field_list();
                 }
 
+                this.toggle_grid_lines(false);
+                this.clear_alignment_guides();
+                this.clear_selected_field_type();
+                this.suppress_next_pdf_click();
+
                 $(document).off(".frappe_sign_field_drag");
+
+                up_event.stopPropagation();
+                up_event.preventDefault();
             });
 
             event.stopPropagation();
@@ -780,11 +1017,16 @@ class FrappeSignDesigner {
         handle.off("mousedown.frappe_sign_field_resize");
 
         handle.on("mousedown.frappe_sign_field_resize", (event) => {
+            this.clear_selected_field_type();
+            this.suppress_next_pdf_click();
+
             is_resizing = true;
             start_x = event.clientX;
             start_y = event.clientY;
             start_width = box.outerWidth();
             start_height = box.outerHeight();
+
+            this.toggle_grid_lines(true);
 
             $(document).off(".frappe_sign_field_resize");
 
@@ -802,6 +1044,11 @@ class FrappeSignDesigner {
                 let new_width = start_width + (move_event.clientX - start_x);
                 let new_height = start_height + (move_event.clientY - start_y);
 
+                if (this.snap_to_grid) {
+                    new_width = this.snap_value(new_width);
+                    new_height = this.snap_value(new_height);
+                }
+
                 new_width = Math.max(24, Math.min(new_width, overlay_width - left));
                 new_height = Math.max(24, Math.min(new_height, overlay_height - top));
 
@@ -816,13 +1063,20 @@ class FrappeSignDesigner {
                 this.mark_dirty();
             });
 
-            $(document).on("mouseup.frappe_sign_field_resize", () => {
+            $(document).on("mouseup.frappe_sign_field_resize", (up_event) => {
                 if (is_resizing) {
                     is_resizing = false;
                     this.render_field_list();
                 }
 
+                this.toggle_grid_lines(false);
+                this.clear_selected_field_type();
+                this.suppress_next_pdf_click();
+
                 $(document).off(".frappe_sign_field_resize");
+
+                up_event.stopPropagation();
+                up_event.preventDefault();
             });
 
             event.stopPropagation();
@@ -840,9 +1094,12 @@ class FrappeSignDesigner {
         }
 
         this.fields.forEach((field, index) => {
+            const signer_color = this.get_signer_color(field.signer);
+
             const row = $(`
                 <div class="frappe-sign-field-row" data-index="${index}">
-                    <div>
+                    <span class="frappe-sign-field-row-color"></span>
+                    <div class="frappe-sign-field-row-main">
                         <strong>${frappe.utils.escape_html(field.field_type)}</strong>
                         <br>
                         <small>
@@ -859,6 +1116,8 @@ class FrappeSignDesigner {
                     }
                 </div>
             `);
+
+            row.find(".frappe-sign-field-row-color").css("background", signer_color);
 
             row.on("click", () => {
                 const page_el = document.getElementById(`frappe-sign-page-${field.page}`);
@@ -880,10 +1139,155 @@ class FrappeSignDesigner {
                 this.mark_dirty();
                 this.render_existing_fields();
                 this.render_field_list();
+                this.clear_selected_field_type();
+                this.suppress_next_pdf_click();
             });
 
             container.append(row);
         });
+    }
+
+    snap_value(value) {
+        if (!this.snap_to_grid) {
+            return value;
+        }
+
+        return Math.round(value / this.grid_size) * this.grid_size;
+    }
+
+    snap_position(left, top, overlay_width, overlay_height, box_width, box_height) {
+        let snapped_left = this.snap_value(left);
+        let snapped_top = this.snap_value(top);
+
+        snapped_left = Math.max(0, Math.min(snapped_left, overlay_width - box_width));
+        snapped_top = Math.max(0, Math.min(snapped_top, overlay_height - box_height));
+
+        return {
+            left: snapped_left,
+            top: snapped_top,
+        };
+    }
+
+    clear_alignment_guides() {
+        this.page.main.find(".frappe-sign-alignment-guide").remove();
+    }
+
+    show_alignment_guides(overlay, guide_positions) {
+        this.clear_alignment_guides();
+
+        for (const guide of guide_positions) {
+            const guide_el = $(`<div class="frappe-sign-alignment-guide"></div>`);
+
+            if (guide.type === "vertical") {
+                guide_el.addClass("vertical").css({
+                    left: `${guide.position}px`,
+                });
+            }
+
+            if (guide.type === "horizontal") {
+                guide_el.addClass("horizontal").css({
+                    top: `${guide.position}px`,
+                });
+            }
+
+            overlay.append(guide_el);
+        }
+    }
+
+    get_alignment_snap(overlay, moving_field, moving_index, left, top, box_width, box_height) {
+        const guides = [];
+        let snapped_left = left;
+        let snapped_top = top;
+
+        const overlay_width = overlay.width();
+        const overlay_height = overlay.height();
+
+        const moving = {
+            left,
+            right: left + box_width,
+            center_x: left + box_width / 2,
+            top,
+            bottom: top + box_height,
+            center_y: top + box_height / 2,
+        };
+
+        this.fields.forEach((field, index) => {
+            if (index === moving_index) {
+                return;
+            }
+
+            if (field.page !== moving_field.page) {
+                return;
+            }
+
+            const other_left = field.x_ratio * overlay_width;
+            const other_top = field.y_ratio * overlay_height;
+            const other_width = field.width_ratio * overlay_width;
+            const other_height = field.height_ratio * overlay_height;
+
+            const other = {
+                left: other_left,
+                right: other_left + other_width,
+                center_x: other_left + other_width / 2,
+                top: other_top,
+                bottom: other_top + other_height,
+                center_y: other_top + other_height / 2,
+            };
+
+            const x_pairs = [
+                { moving: moving.left, other: other.left, adjust: 0 },
+                { moving: moving.right, other: other.right, adjust: box_width },
+                { moving: moving.center_x, other: other.center_x, adjust: box_width / 2 },
+                { moving: moving.left, other: other.right, adjust: 0 },
+                { moving: moving.right, other: other.left, adjust: box_width },
+            ];
+
+            for (const pair of x_pairs) {
+                if (Math.abs(pair.moving - pair.other) <= this.alignment_threshold) {
+                    snapped_left = pair.other - pair.adjust;
+                    guides.push({
+                        type: "vertical",
+                        position: pair.other,
+                    });
+                    break;
+                }
+            }
+
+            const y_pairs = [
+                { moving: moving.top, other: other.top, adjust: 0 },
+                { moving: moving.bottom, other: other.bottom, adjust: box_height },
+                { moving: moving.center_y, other: other.center_y, adjust: box_height / 2 },
+                { moving: moving.top, other: other.bottom, adjust: 0 },
+                { moving: moving.bottom, other: other.top, adjust: box_height },
+            ];
+
+            for (const pair of y_pairs) {
+                if (Math.abs(pair.moving - pair.other) <= this.alignment_threshold) {
+                    snapped_top = pair.other - pair.adjust;
+                    guides.push({
+                        type: "horizontal",
+                        position: pair.other,
+                    });
+                    break;
+                }
+            }
+        });
+
+        return {
+            left: snapped_left,
+            top: snapped_top,
+            guides,
+        };
+    }
+
+    get_signer_index(signer_name) {
+        const index = this.signers.findIndex((row) => row.name === signer_name);
+        return index < 0 ? 0 : index;
+    }
+
+    get_signer_color(signer_name) {
+        const index = this.get_signer_index(signer_name);
+        return this.signer_colors[index % this.signer_colors.length];
     }
 
     get_signer_label(signer_name) {
@@ -893,7 +1297,7 @@ class FrappeSignDesigner {
             return "";
         }
 
-        return signer.full_name || signer.email || signer.user || signer.name;
+        return signer.full_name || signer.email || signer.signer || signer.name;
     }
 
     round_ratio(value) {
@@ -910,11 +1314,13 @@ class FrappeSignDesigner {
         this.page.set_indicator(__("Saved"), "green");
     }
 
-    async save_fields() {
+    async save_fields(options = {}) {
         if (this.is_read_only) {
             frappe.msgprint(__("This request is read-only because it has already been sent."));
             return;
         }
+
+        const reload = options.reload !== false;
 
         await frappe.call({
             method: "frappe_sign.api.designer.save_fields",
@@ -933,7 +1339,9 @@ class FrappeSignDesigner {
             indicator: "green",
         });
 
-        await this.load_request();
+        if (reload) {
+            await this.load_request();
+        }
     }
 
     async send_request() {
@@ -947,11 +1355,13 @@ class FrappeSignDesigner {
             return;
         }
 
-        frappe.confirm(__("Send this signing request now?"), async () => {
+        const message = this.is_dirty
+            ? __("There are unsaved field changes. Save the fields and send this signing request now?")
+            : __("Send this signing request now?");
+
+        frappe.confirm(message, async () => {
             if (this.is_dirty) {
-                await this.save_fields();
-            } else {
-                await this.save_fields();
+                await this.save_fields({ reload: false });
             }
 
             await frappe.call({
@@ -970,324 +1380,5 @@ class FrappeSignDesigner {
 
             frappe.set_route("Form", "Frappe Sign Request", this.request_name);
         });
-    }
-
-    inject_designer_css() {
-        if (document.getElementById("frappe-sign-designer-inline-css")) {
-            return;
-        }
-
-        const style = document.createElement("style");
-        style.id = "frappe-sign-designer-inline-css";
-        style.textContent = `
-            .frappe-sign.frappe-sign-designer {
-                max-width: none;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                --frappe-sign-border: #d1d8dd;
-                --frappe-sign-card-bg: #ffffff;
-                --frappe-sign-primary: #2490ef;
-                --frappe-sign-danger: #e24c4b;
-                --frappe-sign-muted: #6b7280;
-            }
-
-            .frappe-sign-designer-toolbar {
-                position: sticky;
-                top: 0;
-                z-index: 50;
-                background: var(--frappe-sign-card-bg);
-                border: 1px solid var(--frappe-sign-border);
-                border-radius: 8px;
-                padding: 10px 12px;
-                margin-bottom: 12px;
-                display: flex;
-                justify-content: space-between;
-                gap: 12px;
-                align-items: center;
-            }
-
-            .frappe-sign-toolbar-left {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-                flex-wrap: wrap;
-            }
-
-            .frappe-sign-zoom-controls {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            #frappe-sign-zoom-label {
-                min-width: 48px;
-                text-align: center;
-                font-weight: 700;
-            }
-
-            .frappe-sign-designer-layout {
-                display: grid;
-                grid-template-columns: 280px minmax(520px, 1fr) 180px;
-                gap: 12px;
-                align-items: start;
-                width: 100%;
-            }
-
-            .frappe-sign-left-panel,
-            .frappe-sign-right-panel {
-                position: sticky;
-                top: 64px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                max-height: calc(100vh - 96px);
-                overflow: auto;
-            }
-
-            .frappe-sign-card {
-                background: var(--frappe-sign-card-bg);
-                border: 1px solid var(--frappe-sign-border);
-                border-radius: 8px;
-                padding: 12px;
-            }
-
-            .frappe-sign-card h4 {
-                margin: 0 0 10px;
-                font-size: 14px;
-                font-weight: 700;
-            }
-
-            .frappe-sign-muted,
-            .frappe-sign-help {
-                color: var(--frappe-sign-muted);
-                font-size: 12px;
-            }
-
-            .frappe-sign-warning {
-                color: #b7791f;
-                font-size: 12px;
-                font-weight: 600;
-            }
-
-            .frappe-sign-field-palette {
-                display: grid;
-                gap: 8px;
-            }
-
-            .frappe-sign-palette-item {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                border: 1px solid var(--frappe-sign-border);
-                border-radius: 6px;
-                background: #f8fafc;
-                padding: 8px 10px;
-                cursor: grab;
-                user-select: none;
-                font-weight: 600;
-            }
-
-            .frappe-sign-palette-item:hover,
-            .frappe-sign-palette-item.active {
-                border-color: var(--frappe-sign-primary);
-                background: #eef6ff;
-            }
-
-            .frappe-sign-palette-item.disabled {
-                opacity: 0.55;
-                cursor: not-allowed;
-            }
-
-            .frappe-sign-palette-icon {
-                width: 18px;
-                height: 18px;
-                border-radius: 50%;
-                background: var(--frappe-sign-primary);
-                color: #ffffff;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 13px;
-                line-height: 1;
-            }
-
-            .frappe-sign-document-panel {
-                min-width: 0;
-                background: #eef1f5;
-                border: 1px solid var(--frappe-sign-border);
-                border-radius: 8px;
-                padding: 18px;
-                height: calc(100vh - 120px);
-                overflow: auto;
-            }
-
-            .frappe-sign-pdf-pages {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 18px;
-            }
-
-            .frappe-sign-loading {
-                padding: 24px;
-                color: var(--frappe-sign-muted);
-            }
-
-            .frappe-sign-pdf-page-wrapper {
-                width: fit-content;
-            }
-
-            .frappe-sign-page-label {
-                font-size: 12px;
-                font-weight: 700;
-                color: var(--frappe-sign-muted);
-                margin-bottom: 6px;
-            }
-
-            .frappe-sign-pdf-page {
-                position: relative;
-                background: #ffffff;
-                border: 1px solid var(--frappe-sign-border);
-                box-shadow: 0 3px 16px rgba(0, 0, 0, 0.16);
-            }
-
-            .frappe-sign-pdf-canvas {
-                display: block;
-            }
-
-            .frappe-sign-page-overlay {
-                position: absolute;
-                inset: 0;
-                z-index: 5;
-                cursor: crosshair;
-            }
-
-            .frappe-sign-field-box {
-                position: absolute;
-                z-index: 20;
-                border: 2px solid var(--frappe-sign-primary);
-                background: rgba(36, 144, 239, 0.12);
-                border-radius: 4px;
-                padding: 4px;
-                cursor: move;
-                overflow: visible;
-                min-width: 24px;
-                min-height: 24px;
-                box-sizing: border-box;
-            }
-
-            .frappe-sign-field-box.active {
-                box-shadow: 0 0 0 3px rgba(36, 144, 239, 0.22);
-            }
-
-            .frappe-sign-field-box-label {
-                font-size: 11px;
-                font-weight: 700;
-                line-height: 1.1;
-                pointer-events: none;
-            }
-
-            .frappe-sign-field-box-signer {
-                font-size: 10px;
-                line-height: 1.1;
-                color: #334155;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                pointer-events: none;
-            }
-
-            .frappe-sign-field-remove {
-                position: absolute;
-                top: -9px;
-                right: -9px;
-                width: 20px;
-                height: 20px;
-                border: 0;
-                border-radius: 50%;
-                background: var(--frappe-sign-danger);
-                color: #ffffff;
-                font-size: 14px;
-                line-height: 18px;
-                padding: 0;
-                cursor: pointer;
-                z-index: 30;
-            }
-
-            .frappe-sign-resize-handle {
-                position: absolute;
-                right: 0;
-                bottom: 0;
-                width: 13px;
-                height: 13px;
-                background: var(--frappe-sign-primary);
-                cursor: nwse-resize;
-                border-top-left-radius: 4px;
-                z-index: 30;
-            }
-
-            .frappe-sign-page-thumbnails {
-                display: grid;
-                gap: 10px;
-            }
-
-            .frappe-sign-page-thumb {
-                border: 1px solid var(--frappe-sign-border);
-                border-radius: 6px;
-                padding: 6px;
-                background: #ffffff;
-                cursor: pointer;
-                text-align: center;
-                font-size: 11px;
-                font-weight: 600;
-            }
-
-            .frappe-sign-page-thumb:hover,
-            .frappe-sign-page-thumb.active {
-                border-color: var(--frappe-sign-primary);
-                background: #eef6ff;
-            }
-
-            .frappe-sign-page-thumb canvas {
-                max-width: 100%;
-                display: block;
-                margin: 0 auto 4px;
-                border: 1px solid #e5e7eb;
-            }
-
-            .frappe-sign-field-row {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 6px;
-                padding: 8px 0;
-                border-bottom: 1px solid var(--frappe-sign-border);
-                cursor: pointer;
-            }
-
-            .frappe-sign-field-row:last-child {
-                border-bottom: 0;
-            }
-
-            .frappe-sign-field-row:hover {
-                background: #f8fafc;
-            }
-
-            .frappe-sign-drag-ghost {
-                position: fixed;
-                z-index: 99999;
-                pointer-events: none;
-                border: 2px solid var(--frappe-sign-primary);
-                background: rgba(36, 144, 239, 0.16);
-                color: #0f172a;
-                border-radius: 6px;
-                padding: 8px 12px;
-                font-weight: 700;
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-            }
-        `;
-
-        document.head.appendChild(style);
     }
 }

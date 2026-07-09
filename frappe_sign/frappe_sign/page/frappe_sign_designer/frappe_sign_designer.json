@@ -4,13 +4,23 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2026-07-07 10:56:04.291132",
+ "modified": "2026-07-08 12:36:31.072818",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "frappe-sign-designer",
  "owner": "Administrator",
  "page_name": "frappe-sign-designer",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Frappe Sign Manager"
+  },
+  {
+   "role": "Frappe Sign Sender"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

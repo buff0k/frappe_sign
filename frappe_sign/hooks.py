@@ -25,15 +25,6 @@ fixtures = [
         "Frappe Sign User",
         "Frappe Sign Sender",
         "Frappe Sign Manager",
-    ]]]},
-    {"dt": "Custom Field", "filters": [["name", "in", [
-        "User-frappe_sign_section",
-        "User-frappe_sign_signature",
-        "User-frappe_sign_initials",
-        "User-frappe_sign_signature_type",
-        "User-frappe_sign_signature_consent",
-        "User-frappe_sign_signature_consent_on",
-        "User-frappe_sign_signature_hash",
     ]]]}
 ]
 
