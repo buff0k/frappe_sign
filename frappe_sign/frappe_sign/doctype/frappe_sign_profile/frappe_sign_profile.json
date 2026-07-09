@@ -6,15 +6,19 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "identity_section",
   "user",
   "full_name",
   "email",
+  "signature_section",
   "signature_type",
   "signature_image",
   "initials_image",
   "signature_text",
+  "hashes_section",
   "signature_hash",
   "initials_hash",
+  "consent_section",
   "consent",
   "consent_on",
   "active",
@@ -30,6 +34,7 @@
   },
   {
    "allow_in_quick_entry": 1,
+   "fetch_from": "user.full_name",
    "fieldname": "full_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -37,6 +42,7 @@
   },
   {
    "allow_in_quick_entry": 1,
+   "fetch_from": "user.email",
    "fieldname": "email",
    "fieldtype": "Data",
    "in_filter": 1,
@@ -100,12 +106,41 @@
    "fieldtype": "Datetime",
    "label": "Revoked On",
    "read_only": 1
+  },
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "fieldname": "signature_section",
+   "fieldtype": "Section Break",
+   "label": "Signature"
+  },
+  {
+   "fieldname": "hashes_section",
+   "fieldtype": "Section Break",
+   "label": "Hashes"
+  },
+  {
+   "fieldname": "consent_section",
+   "fieldtype": "Section Break",
+   "label": "Consent"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-07-08 13:03:03.826532",
+ "links": [
+  {
+   "group": "Signing",
+   "is_child_table": 1,
+   "link_doctype": "Frappe Sign Signer",
+   "link_fieldname": "signer",
+   "parent_doctype": "Frappe Sign Request",
+   "table_fieldname": "signers"
+  }
+ ],
+ "modified": "2026-07-09 10:28:40.682742",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Profile",

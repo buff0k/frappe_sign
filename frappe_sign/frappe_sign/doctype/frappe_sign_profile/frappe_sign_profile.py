@@ -9,11 +9,13 @@ from frappe.utils import now_datetime
 
 from frappe_sign.utils.audit import sha256_bytes
 from frappe_sign.utils.files import get_file_bytes
+from frappe_sign.utils.signatures import attach_signature_png
 
 
 class FrappeSignProfile(Document):
     def autoname(self):
         self.populate_user_details()
+        self.normalize_email()
         self.validate_identity()
 
         base_name = make_profile_name(self.full_name, self.email)
@@ -99,7 +101,6 @@ def make_profile_name(full_name, email):
 
     base_name = f"{full_name} - {email}"
 
-    # Avoid path-like characters in document names while keeping the name readable.
     base_name = re.sub(r"[\r\n\t/\\]+", " ", base_name)
     base_name = re.sub(r"\s+", " ", base_name).strip()
 
@@ -119,3 +120,34 @@ def make_unique_profile_name(base_name):
             return candidate
 
         counter += 1
+
+
+@frappe.whitelist()
+def save_drawn_signature(profile_name, kind, data_url):
+    profile = frappe.get_doc("Frappe Sign Profile", profile_name)
+
+    if not frappe.has_permission("Frappe Sign Profile", "write", doc=profile):
+        frappe.throw("You do not have permission to update this Frappe Sign Profile.")
+
+    result = attach_signature_png(
+        reference_doctype="Frappe Sign Profile",
+        reference_name=profile.name,
+        kind=kind,
+        data_url=data_url,
+    )
+
+    profile.set(result["fieldname"], result["file_url"])
+
+    if kind == "signature":
+        profile.signature_type = "Drawn"
+
+    profile.save(ignore_permissions=True)
+
+    return {
+        "status": "saved",
+        "kind": kind,
+        "fieldname": result["fieldname"],
+        "file_url": result["file_url"],
+        "signature_hash": profile.signature_hash,
+        "initials_hash": profile.initials_hash,
+    }

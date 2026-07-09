@@ -593,3 +593,426 @@
     width: 18px;
     height: 18px;
 }
+
+/* Signature drawing pad
+   ========================================================================== */
+
+.frappe-sign-draw-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.frappe-sign-draw-pad-help {
+    margin: 0;
+    color: var(--frappe-sign-text-muted);
+}
+
+.frappe-sign-draw-pad-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.frappe-sign-draw-canvas {
+    display: block;
+    width: 720px;
+    height: 260px;
+    max-width: 100%;
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    background:
+        linear-gradient(to right, rgba(36, 144, 239, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(36, 144, 239, 0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    touch-action: none;
+}
+
+.frappe-sign-draw-pad-note {
+    margin: 0;
+    color: var(--frappe-sign-text-muted);
+    font-size: 12px;
+}
+
+/* Portal Frappe Sign Profile
+   ========================================================================== */
+
+.frappe-sign-portal-profile {
+    max-width: 1100px;
+}
+
+.frappe-sign-profile-layout {
+    display: grid;
+    gap: 16px;
+}
+
+.frappe-sign-profile-field {
+    margin-bottom: 12px;
+}
+
+.frappe-sign-profile-field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.frappe-sign-profile-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.frappe-sign-profile-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.frappe-sign-profile-preview-card {
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    padding: 12px;
+    background: #ffffff;
+}
+
+.frappe-sign-profile-preview-card h5 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.frappe-sign-profile-preview-slot {
+    min-height: 120px;
+    border: 1px dashed var(--frappe-sign-border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        linear-gradient(45deg, #f8fafc 25%, transparent 25%),
+        linear-gradient(-45deg, #f8fafc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f8fafc 75%),
+        linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
+    background-size: 18px 18px;
+    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+    margin-bottom: 8px;
+}
+
+.frappe-sign-profile-image-preview {
+    max-width: 100%;
+    max-height: 110px;
+    display: block;
+}
+
+.frappe-sign-profile-empty-preview {
+    color: var(--frappe-sign-text-muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 12px;
+}
+
+.frappe-sign-profile-checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-weight: 400;
+}
+
+.frappe-sign-profile-checkbox-row input {
+    margin-top: 3px;
+}
+
+.frappe-sign-remove-image {
+    width: 100%;
+}
+
+/* Portal drawing modal
+   ========================================================================== */
+
+.frappe-sign-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.frappe-sign-modal-backdrop[hidden] {
+    display: none;
+}
+
+.frappe-sign-modal {
+    width: min(820px, 100%);
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid var(--frappe-sign-border);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+    padding: 16px;
+}
+
+.frappe-sign-modal-header,
+.frappe-sign-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.frappe-sign-modal-header {
+    margin-bottom: 12px;
+}
+
+.frappe-sign-modal-footer {
+    margin-top: 12px;
+    justify-content: flex-end;
+}
+
+.frappe-sign-modal h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* Signature drawing pad
+   ========================================================================== */
+
+.frappe-sign-draw-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.frappe-sign-draw-pad-help {
+    margin: 0;
+    color: var(--frappe-sign-text-muted);
+}
+
+.frappe-sign-draw-pad-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.frappe-sign-draw-canvas {
+    display: block;
+    width: 720px;
+    height: 260px;
+    max-width: 100%;
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    background:
+        linear-gradient(to right, rgba(36, 144, 239, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(36, 144, 239, 0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    touch-action: none;
+}
+
+.frappe-sign-draw-pad-note {
+    margin: 0;
+    color: var(--frappe-sign-text-muted);
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .frappe-sign-profile-preview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .frappe-sign-modal {
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+    }
+}
+
+/* Portal Documents To Sign
+   ========================================================================== */
+
+.frappe-sign-documents-page {
+    max-width: 1100px;
+}
+
+.frappe-sign-documents-list {
+    display: grid;
+    gap: 12px;
+}
+
+.frappe-sign-document-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 14px;
+    cursor: pointer;
+}
+
+.frappe-sign-document-card:hover {
+    background: #f8fafc;
+    border-color: var(--frappe-sign-primary);
+}
+
+.frappe-sign-document-card h4 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.frappe-sign-document-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 12px;
+    color: var(--frappe-sign-text-muted);
+    margin-bottom: 6px;
+}
+
+.frappe-sign-document-card-main {
+    min-width: 0;
+}
+
+.frappe-sign-document-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.frappe-sign-empty-state {
+    text-align: center;
+    padding: 32px 12px;
+}
+
+.frappe-sign-empty-state h4 {
+    margin-top: 0;
+}
+
+@media (max-width: 768px) {
+    .frappe-sign-document-card {
+        grid-template-columns: 1fr;
+    }
+
+    .frappe-sign-document-card-actions {
+        justify-content: flex-start;
+    }
+}
+
+/* Portal signing completion
+   ========================================================================== */
+
+.frappe-sign-consent-notice {
+    border: 1px solid var(--frappe-sign-warning);
+    background: #fff8eb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.frappe-sign-consent-notice p {
+    margin: 4px 0 10px;
+}
+
+.frappe-sign-signature-image,
+.frappe-sign-initials-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.frappe-sign-typed-signature {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    font-family: cursive;
+    font-size: 18px;
+    line-height: 1.1;
+    color: #111827;
+}
+
+.frappe-sign-signing-field.completed .frappe-sign-signing-field-label {
+    opacity: 0.5;
+}
+
+/* Portal signing field content fitting
+   ========================================================================== */
+
+.frappe-sign-signing-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.frappe-sign-signing-field-label {
+    flex: 0 0 auto;
+}
+
+.frappe-sign-signing-field-value {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+.frappe-sign-signature-image,
+.frappe-sign-initials-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.frappe-sign-typed-signature {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-family: cursive;
+    font-size: 18px;
+    line-height: 1.1;
+    color: #111827;
+    overflow: hidden;
+}
+
+/* Signing portal setup workflow
+   ========================================================================== */
+
+.frappe-sign-setup-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.frappe-sign-setup-pane {
+    margin-top: 12px;
+}
+
+.frappe-sign-field-attention {
+    animation: frappe-sign-field-pulse 1.4s ease-in-out;
+}
+
+@keyframes frappe-sign-field-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(36, 144, 239, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(36, 144, 239, 0.22);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(36, 144, 239, 0);
+    }
+}
+
+.frappe-sign-toolbar {
+    flex-wrap: wrap;
+}

@@ -1,0 +1,236 @@
+{% extends "templates/web.html" %}
+
+{% block title %}
+    {{ _("Frappe Sign Profile") }}
+{% endblock %}
+
+{% block page_content %}
+<div class="frappe-sign frappe-sign-portal-profile">
+    <div class="frappe-sign-header">
+        <h1>{{ _("Frappe Sign Profile") }}</h1>
+        <p class="text-muted">
+            {{ _("Configure your saved signature, initials and signing consent.") }}
+        </p>
+    </div>
+
+    <div class="frappe-sign-profile-layout">
+        <div class="frappe-sign-card">
+            <h4>{{ _("Identity") }}</h4>
+
+            <div class="frappe-sign-profile-field">
+                <label>{{ _("Full Name") }}</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="frappe-sign-profile-full-name"
+                    value="{{ profile.full_name or '' }}"
+                    readonly
+                >
+            </div>
+
+            <div class="frappe-sign-profile-field">
+                <label>{{ _("Email") }}</label>
+                <input
+                    type="email"
+                    class="form-control"
+                    id="frappe-sign-profile-email"
+                    value="{{ profile.email or '' }}"
+                    readonly
+                >
+            </div>
+
+            <p class="frappe-sign-help">
+                {{ _("Your name and email are pulled from your Frappe User account.") }}
+            </p>
+        </div>
+
+        <div class="frappe-sign-card">
+            <h4>{{ _("Signature Settings") }}</h4>
+
+            <div class="frappe-sign-profile-field">
+                <label>{{ _("Signature Type") }}</label>
+                <select class="form-control" id="frappe-sign-signature-type">
+                    <option value="Uploaded" {% if profile.signature_type == "Uploaded" %}selected{% endif %}>
+                        {{ _("Uploaded") }}
+                    </option>
+                    <option value="Drawn" {% if profile.signature_type == "Drawn" %}selected{% endif %}>
+                        {{ _("Drawn") }}
+                    </option>
+                    <option value="Typed" {% if profile.signature_type == "Typed" %}selected{% endif %}>
+                        {{ _("Typed") }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="frappe-sign-profile-field" id="frappe-sign-signature-text-wrapper">
+                <label>{{ _("Typed Signature") }}</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="frappe-sign-signature-text"
+                    value="{{ profile.signature_text or '' }}"
+                    placeholder="{{ _('Type your signature text') }}"
+                >
+            </div>
+
+            <div class="frappe-sign-profile-actions">
+                <button type="button" class="btn btn-default" id="frappe-sign-draw-signature">
+                    {{ _("Draw Signature") }}
+                </button>
+
+                <button type="button" class="btn btn-default" id="frappe-sign-draw-initials">
+                    {{ _("Draw Initials") }}
+                </button>
+
+                <button type="button" class="btn btn-default" id="frappe-sign-upload-signature">
+                    {{ _("Upload Signature PNG") }}
+                </button>
+
+                <button type="button" class="btn btn-default" id="frappe-sign-upload-initials">
+                    {{ _("Upload Initials PNG") }}
+                </button>
+            </div>
+
+            <input
+                type="file"
+                id="frappe-sign-signature-file"
+                accept="image/png"
+                hidden
+            >
+
+            <input
+                type="file"
+                id="frappe-sign-initials-file"
+                accept="image/png"
+                hidden
+            >
+
+            <div class="frappe-sign-profile-preview-grid">
+                <div class="frappe-sign-profile-preview-card">
+                    <h5>{{ _("Signature") }}</h5>
+
+                    <div class="frappe-sign-profile-preview-slot" id="frappe-sign-signature-preview-slot">
+                        {% if profile.signature_image %}
+                            <img
+                                id="frappe-sign-signature-preview"
+                                class="frappe-sign-profile-image-preview"
+                                src="{{ profile.signature_image }}"
+                                alt="{{ _('Signature') }}"
+                            >
+                        {% else %}
+                            <div
+                                id="frappe-sign-signature-preview-empty"
+                                class="frappe-sign-profile-empty-preview"
+                            >
+                                {{ _("No signature image saved.") }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn btn-xs btn-danger frappe-sign-remove-image"
+                        id="frappe-sign-remove-signature"
+                        {% if not profile.signature_image %}disabled{% endif %}
+                    >
+                        {{ _("Remove Signature Image") }}
+                    </button>
+                </div>
+
+                <div class="frappe-sign-profile-preview-card">
+                    <h5>{{ _("Initials") }}</h5>
+
+                    <div class="frappe-sign-profile-preview-slot" id="frappe-sign-initials-preview-slot">
+                        {% if profile.initials_image %}
+                            <img
+                                id="frappe-sign-initials-preview"
+                                class="frappe-sign-profile-image-preview"
+                                src="{{ profile.initials_image }}"
+                                alt="{{ _('Initials') }}"
+                            >
+                        {% else %}
+                            <div
+                                id="frappe-sign-initials-preview-empty"
+                                class="frappe-sign-profile-empty-preview"
+                            >
+                                {{ _("No initials image saved.") }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn btn-xs btn-danger frappe-sign-remove-image"
+                        id="frappe-sign-remove-initials"
+                        {% if not profile.initials_image %}disabled{% endif %}
+                    >
+                        {{ _("Remove Initials Image") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="frappe-sign-card">
+            <h4>{{ _("Consent") }}</h4>
+
+            <label class="frappe-sign-profile-checkbox-row">
+                <input
+                    type="checkbox"
+                    id="frappe-sign-consent"
+                    {% if profile.consent %}checked{% endif %}
+                >
+                <span>
+                    {{ _("I consent to using my saved signature and initials for electronic signing in Frappe Sign.") }}
+                </span>
+            </label>
+
+            <p class="frappe-sign-help" id="frappe-sign-consent-on">
+                {% if profile.consent_on %}
+                    {{ _("Consent given on") }}: {{ frappe.format(profile.consent_on, {"fieldtype": "Datetime"}) }}
+                {% else %}
+                    {{ _("Consent has not yet been given.") }}
+                {% endif %}
+            </p>
+
+            <div class="frappe-sign-profile-actions">
+                <button type="button" class="btn btn-primary" id="frappe-sign-save-profile">
+                    {{ _("Save Settings") }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="frappe-sign-modal-backdrop" id="frappe-sign-draw-modal" hidden>
+        <div class="frappe-sign-modal">
+            <div class="frappe-sign-modal-header">
+                <h3 id="frappe-sign-draw-modal-title">{{ _("Draw") }}</h3>
+                <button type="button" class="btn btn-default btn-sm" id="frappe-sign-draw-modal-close">
+                    {{ _("Close") }}
+                </button>
+            </div>
+
+            <div class="frappe-sign-draw-pad">
+                <p class="frappe-sign-draw-pad-help" id="frappe-sign-draw-modal-help"></p>
+
+                <div class="frappe-sign-draw-pad-toolbar">
+                    <button type="button" class="btn btn-default btn-sm" id="frappe-sign-draw-clear">
+                        {{ _("Clear") }}
+                    </button>
+                </div>
+
+                <canvas class="frappe-sign-draw-canvas" id="frappe-sign-draw-canvas"></canvas>
+
+                <p class="frappe-sign-draw-pad-note">
+                    {{ _("The saved image will be stored as a transparent PNG.") }}
+                </p>
+            </div>
+
+            <div class="frappe-sign-modal-footer">
+                <button type="button" class="btn btn-primary" id="frappe-sign-draw-save">
+                    {{ _("Save") }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

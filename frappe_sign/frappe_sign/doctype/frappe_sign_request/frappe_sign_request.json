@@ -147,11 +147,14 @@
   {
    "fieldname": "expires_on",
    "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Expires On"
   },
   {
    "fieldname": "completed_on",
    "fieldtype": "Datetime",
+   "in_list_view": 1,
    "label": "Completed On",
    "read_only": 1
   },
@@ -191,17 +194,22 @@
   {
    "fieldname": "signed_pdf",
    "fieldtype": "Attach",
-   "label": "Signed PDF"
+   "in_list_view": 1,
+   "label": "Signed PDF",
+   "read_only": 1
   },
   {
    "fieldname": "audit_certificate",
    "fieldtype": "Attach",
-   "label": "Audit Certificate"
+   "label": "Audit Certificate",
+   "read_only": 1
   },
   {
    "fieldname": "certificate_signed_pdf",
    "fieldtype": "Attach",
-   "label": "Certificate Signed PDF"
+   "in_list_view": 1,
+   "label": "Certificate Signed PDF",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_zdzk",
@@ -240,6 +248,7 @@
    "default": "Not Checked",
    "fieldname": "tamper_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Tamper Status",
    "options": "Not Checked\nPassed\nFailed",
    "read_only": 1
@@ -294,8 +303,14 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2026-07-08 13:14:26.995128",
+ "links": [
+  {
+   "group": "Audit",
+   "link_doctype": "Frappe Sign Event",
+   "link_fieldname": "frappe_sign_request"
+  }
+ ],
+ "modified": "2026-07-09 10:25:09.348441",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Request",
