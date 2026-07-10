@@ -13,7 +13,7 @@ app_license = "mit"
 add_to_apps_screen = [
     {
         "name": "frappe_sign",
-        "logo": "/assets/frappe_sign/images/desktop_icons/frappe_sign_icon.png",
+        "logo": "/assets/frappe_sign/desktop_icons/frappe_sign_icon.png",
         "title": "Frappe Sign",
         "route": "/frappe_sign",
         "has_permission": "frappe_sign.permissions.has_app_permission",
