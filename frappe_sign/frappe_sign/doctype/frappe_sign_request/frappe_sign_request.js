@@ -15,6 +15,7 @@ frappe.ui.form.on("Frappe Sign Request", {
         frm.trigger("set_indicators");
         frm.trigger("add_actions");
         frm.trigger("lock_completed_request");
+
         if (frm.doc.status === "Completed") {
             frm.add_custom_button(__("Evidence Certificates"), () => {
                 frappe.set_route("List", "Frappe Sign Certificate", {
@@ -35,6 +36,12 @@ frappe.ui.form.on("Frappe Sign Request", {
     },
 
     set_queries(frm) {
+        frm.set_query("signer", "signers", () => {
+            return {
+                query: "frappe_sign.api.signer_search.search_signer_profiles",
+            };
+        });
+
         frm.set_query("source_doctype", () => {
             return {
                 filters: {
@@ -359,11 +366,12 @@ frappe.ui.form.on("Frappe Sign Signer", {
             frappe.model.set_value(cdt, cdn, "signing_order", 1);
         }
 
-        frappe.db.get_value(
-            "Frappe Sign Profile",
-            row.signer,
-            ["full_name", "email", "active", "consent"]
-        ).then((response) => {
+        frappe.call({
+            method: "frappe_sign.api.signer_search.get_signer_profile_snapshot",
+            args: {
+                profile_name: row.signer,
+            },
+        }).then((response) => {
             if (!response.message) {
                 return;
             }
