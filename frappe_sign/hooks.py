@@ -4,12 +4,6 @@ app_publisher = "BuFf0k"
 app_description = "An integrated e-Signature Application"
 app_email = "buff0k@gmail.com"
 app_license = "mit"
-
-# Apps
-# ------------------
-
-# required_apps = []
-
 add_to_apps_screen = [
     {
         "name": "frappe_sign",
@@ -19,7 +13,6 @@ add_to_apps_screen = [
         "has_permission": "frappe_sign.permissions.has_app_permission",
     }
 ]
-
 fixtures = [
     {"dt": "Role", "filters": [["role_name", "in", [
         "Frappe Sign User",
@@ -27,7 +20,6 @@ fixtures = [
         "Frappe Sign Manager",
     ]]]}
 ]
-
 permission_query_conditions = {
     "Frappe Sign Request": "frappe_sign.permissions.frappe_sign_request_query",
     "Frappe Sign Event": "frappe_sign.permissions.frappe_sign_event_query",
@@ -35,7 +27,6 @@ permission_query_conditions = {
     "Frappe Sign Certificate": "frappe_sign.permissions.frappe_sign_certificate_query",
     "Frappe Sign File Hash": "frappe_sign.permissions.frappe_sign_file_hash_query",
 }
-
 has_permission = {
     "Frappe Sign Request": "frappe_sign.permissions.has_frappe_sign_request_permission",
     "Frappe Sign Event": "frappe_sign.permissions.has_frappe_sign_event_permission",
@@ -43,22 +34,18 @@ has_permission = {
     "Frappe Sign Certificate": "frappe_sign.permissions.has_frappe_sign_certificate_permission",
     "Frappe Sign File Hash": "frappe_sign.permissions.has_frappe_sign_file_hash_permission",
 }
-
 website_route_rules = [
     {"from_route": "/sign/<token>", "to_route": "frappe_sign_portal"},
     {"from_route": "/frappe-sign-portal", "to_route": "frappe_sign_portal"},
     {"from_route": "/frappe-sign-profile", "to_route": "frappe_sign_profile"},
     {"from_route": "/frappe-sign-documents", "to_route": "frappe_sign_documents"},
 ]
-
 app_include_css = [
     "/assets/frappe_sign/css/frappe_sign.css",
 ]
-
 app_include_js = [
     "/assets/frappe_sign/js/frappe_sign_button.js",
 ]
-
 standard_portal_menu_items = [
 	{
 		"title": "User Signature Profile",
@@ -72,7 +59,6 @@ standard_portal_menu_items = [
         "reference_doctype": "Frappe Sign Request",
     },
 ]
-
 scheduler_events = {
     "daily": [
         "frappe_sign.utils.notifications.send_daily_signing_reminders",
