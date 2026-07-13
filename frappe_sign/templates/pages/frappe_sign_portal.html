@@ -19,11 +19,31 @@
             <p>Please review the document and complete the required signing fields.</p>
         </div>
 
+        <div class="frappe-sign-electronic-signature-notice">
+            <h2>Electronic Signature Notice</h2>
+
+            <p>
+                This document is being signed electronically using an ordinary electronic signature.
+            </p>
+
+            <p>
+                By signing, you confirm that you have reviewed the document and that your electronic
+                signature, initials, typed name, checkbox selection, or other signing action on this
+                page is intended to be your signature for this document.
+            </p>
+
+            <p>
+                If you do not agree to sign electronically, or if you believe that an advanced
+                electronic signature is legally required for this document, you may decline to sign.
+            </p>
+        </div>
+
         <div
             id="frappe-sign-root"
             class="frappe-sign-root"
             data-token="{{ token }}"
             data-request="{{ request_name }}"
+            data-electronic-signature-notice-version="ZA-ECTA-ORDINARY-ESIGN-v1"
         >
             <div class="frappe-sign-toolbar">
                 <button class="btn btn-default" id="frappe-sign-go-next">

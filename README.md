@@ -35,6 +35,56 @@ It is designed to work inside the Frappe ecosystem while keeping a clear audit t
 - Provide a Desk validator page for independent document validation.
 - Provide reusable signing templates.
 
+## South African electronic signature clarification
+
+Frappe Sign is designed to support ordinary electronic signature workflows under the South African Electronic Communications and Transactions Act, 25 of 2002 ("ECTA").
+
+Frappe Sign is not, by default, an accredited Advanced Electronic Signature service.
+
+For ordinary electronic signature workflows, Frappe Sign records evidence intended to support the signing process, including:
+
+```text
+signer identity
+signer email address
+unique signing link
+document viewed event
+electronic signature notice displayed on the signing page
+signature / initials / text / checkbox actions
+timestamped signing events
+IP address and browser user-agent where available
+source PDF hash
+signed PDF hash
+audit certificate hash
+final verification PDF hash where applicable
+tamper status
+audit event chain
+```
+
+The signing portal displays the following notice before the signer completes the signing process:
+
+```text
+Electronic Signature Notice
+
+This document is being signed electronically using an ordinary electronic signature.
+
+By signing, you confirm that you have reviewed the document and that your electronic signature, initials, typed name, checkbox selection, or other signing action on this page is intended to be your signature for this document.
+
+If you do not agree to sign electronically, or if you believe that an advanced electronic signature is legally required for this document, you may decline to sign.
+```
+
+This notice is intended to make it clear that the signer is choosing to sign electronically using an ordinary electronic signature. The signer may decline to sign if they do not agree with that method or if they believe that an advanced electronic signature is required.
+
+An Advanced Electronic Signature may be required where a law specifically requires a signature and that legal signature requirement must be satisfied electronically, or where a particular statute, regulation, court, authority, counterparty, or internal policy specifically requires an Advanced Electronic Signature.
+
+Users should not rely on Frappe Sign as an Advanced Electronic Signature solution unless it has been integrated with an appropriate accredited Advanced Electronic Signature provider or certificate process and the specific use case has been legally reviewed.
+
+Recommended product positioning:
+
+```text
+Frappe Sign supports ordinary electronic signature workflows and audit evidence. It is not, by default, an accredited Advanced Electronic Signature service under the South African Electronic Communications and Transactions Act, 25 of 2002.
+```
+
+
 ## License
 
 This project is licensed under the MIT License.
@@ -625,6 +675,7 @@ The signing portal allows signers to:
 
 ```text
 view the PDF
+view the Electronic Signature Notice
 give consent if required
 create/update signature and initials
 complete signing fields
@@ -633,6 +684,8 @@ decline the request
 ```
 
 The signer token is unique to that signer and should not be shared.
+
+The signing portal displays an Electronic Signature Notice at the top of the signing page. The notice explains that the document is being signed electronically using an ordinary electronic signature, that the signer's electronic signing action is intended to be their signature for the document, and that the signer may decline to sign if they do not agree to sign electronically or believe an advanced electronic signature is legally required.
 
 ## Completing a request
 
@@ -688,6 +741,8 @@ valid according to Frappe Sign certificate inspection
 ```
 
 If certificate-based PDF signing is enabled but the certificate is missing, unreadable, invalid, or expired, completion should fail rather than silently producing an unsigned PDF.
+
+Certificate-based PDF signing improves document integrity and verification, but it does not automatically make the signature an Advanced Electronic Signature under South African law. Advanced Electronic Signature status depends on the applicable legal framework, accreditation, certificate process, and use case.
 
 ## Frappe Sign Certificate
 
@@ -1017,6 +1072,9 @@ Use a CA-issued document-signing certificate for externally trusted PDF signatur
 - Do not use Let’s Encrypt certificates for PDF document signing.
 - Self-signed certificates are useful for internal integrity and audit evidence, but they are not equivalent to publicly trusted document-signing certificates.
 - Public trust depends on the certificate authority, certificate chain, PDF viewer trust policy, and long-term validation support.
+- Frappe Sign supports ordinary electronic signature workflows and audit evidence.
+- Frappe Sign is not, by default, an accredited Advanced Electronic Signature service under ECTA.
+- If a document legally requires an Advanced Electronic Signature, users must use an appropriate accredited process/provider and obtain legal advice for that use case.
 
 ## Repository
 

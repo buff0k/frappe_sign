@@ -1186,3 +1186,28 @@
         width: 100%;
     }
 }
+
+.frappe-sign-electronic-signature-notice {
+    max-width: 980px;
+    margin: 0 auto 16px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--fg-color);
+}
+
+.frappe-sign-electronic-signature-notice h2 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.frappe-sign-electronic-signature-notice p {
+    margin: 0 0 8px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.frappe-sign-electronic-signature-notice p:last-child {
+    margin-bottom: 0;
+}
