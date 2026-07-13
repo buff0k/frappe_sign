@@ -1211,3 +1211,274 @@
 .frappe-sign-electronic-signature-notice p:last-child {
     margin-bottom: 0;
 }
+
+/* ==========================================================================
+   Dark theme readability fixes
+   ========================================================================== */
+
+/*
+   Frappe Sign intentionally keeps rendered PDF pages white because PDFs are
+   documents, not application chrome. The surrounding designer, validator,
+   cards, panels, form controls, tables, and helper text should follow the
+   active Frappe theme.
+*/
+
+.frappe-sign {
+    --frappe-sign-border: var(--border-color, #d1d8dd);
+    --frappe-sign-muted-bg: var(--subtle-fg, #f7f7f7);
+    --frappe-sign-card-bg: var(--card-bg, var(--fg-color, #ffffff));
+    --frappe-sign-control-bg: var(--control-bg, var(--fg-color, #ffffff));
+    --frappe-sign-hover-bg: var(--highlight-color, var(--subtle-fg, #f8fafc));
+    --frappe-sign-document-bg: var(--bg-color, #eef1f5);
+    --frappe-sign-pdf-page-bg: #ffffff;
+    --frappe-sign-danger: var(--red-500, #e24c4b);
+    --frappe-sign-primary: var(--blue-500, #2490ef);
+    --frappe-sign-success: var(--green-500, #2e9d64);
+    --frappe-sign-warning: var(--orange-500, #b7791f);
+    --frappe-sign-text: var(--text-color, #111827);
+    --frappe-sign-heading: var(--heading-color, var(--text-color, #111827));
+    --frappe-sign-text-muted: var(--text-muted, #6b7280);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign h1,
+.frappe-sign h2,
+.frappe-sign h3,
+.frappe-sign h4,
+.frappe-sign h5,
+.frappe-sign h6,
+.frappe-sign label,
+.frappe-sign strong {
+    color: var(--frappe-sign-heading);
+}
+
+.frappe-sign p,
+.frappe-sign span,
+.frappe-sign small,
+.frappe-sign div {
+    color: inherit;
+}
+
+.frappe-sign-header p,
+.frappe-sign-muted,
+.frappe-sign-help,
+.frappe-sign-draw-pad-help,
+.frappe-sign-draw-pad-note,
+.frappe-sign-profile-empty-preview,
+.frappe-sign-document-meta,
+.frappe-sign-loading,
+.frappe-sign-validation-hash span,
+.frappe-sign-validator-summary-item span,
+.frappe-sign .text-muted {
+    color: var(--frappe-sign-text-muted) !important;
+}
+
+.frappe-sign-card,
+.frappe-sign-message,
+.frappe-sign-toolbar,
+.frappe-sign-designer-toolbar,
+.frappe-sign-validator-card,
+.frappe-sign-profile-preview-card,
+.frappe-sign-modal,
+.frappe-sign-electronic-signature-notice {
+    background: var(--frappe-sign-card-bg);
+    border-color: var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-document-panel {
+    background: var(--frappe-sign-document-bg);
+    border-color: var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-pdf-container {
+    background: var(--frappe-sign-document-bg);
+    border-color: var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-pdf-page,
+.frappe-sign-page-thumb,
+.frappe-sign-profile-preview-slot {
+    background-color: var(--frappe-sign-pdf-page-bg);
+    color: #111827;
+}
+
+.frappe-sign-page-label,
+.frappe-sign-page-thumb div {
+    color: var(--frappe-sign-text-muted);
+}
+
+/* Field palette and field rows */
+
+.frappe-sign-palette-item,
+.frappe-sign-field-row,
+.frappe-sign-document-card {
+    background: var(--frappe-sign-control-bg);
+    border-color: var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-palette-item:hover,
+.frappe-sign-palette-item.active,
+.frappe-sign-page-thumb:hover,
+.frappe-sign-page-thumb.active,
+.frappe-sign-field-row:hover,
+.frappe-sign-document-card:hover {
+    background: var(--frappe-sign-hover-bg);
+    border-color: var(--frappe-sign-primary);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-palette-item.disabled {
+    opacity: 0.55;
+}
+
+.frappe-sign-field-box-label,
+.frappe-sign-field-box-signer,
+.frappe-sign-drag-ghost,
+.frappe-sign-drag-ghost * {
+    color: #0f172a;
+}
+
+/* Form controls */
+
+.frappe-sign input,
+.frappe-sign select,
+.frappe-sign textarea,
+.frappe-sign .form-control {
+    background-color: var(--frappe-sign-control-bg);
+    border-color: var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign input[type="file"] {
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign input[type="file"]::file-selector-button {
+    background: var(--frappe-sign-muted-bg);
+    border: 1px solid var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign input::placeholder,
+.frappe-sign textarea::placeholder {
+    color: var(--frappe-sign-text-muted);
+}
+
+/* Validator */
+
+.frappe-sign-validation-hash,
+.frappe-sign-validator-summary {
+    background: var(--frappe-sign-card-bg);
+    border-color: var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-validation-hash code,
+.frappe-sign-validator-summary-item code {
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-validator-summary-item {
+    border-color: var(--frappe-sign-border);
+}
+
+.frappe-sign-validator-summary-item:nth-child(odd) {
+    border-color: var(--frappe-sign-border);
+}
+
+.frappe-sign-validator-table,
+.frappe-sign-validator-table th,
+.frappe-sign-validator-table td {
+    border-color: var(--frappe-sign-border);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-validator-table th {
+    background: var(--frappe-sign-muted-bg);
+    color: var(--frappe-sign-heading);
+}
+
+.frappe-sign-validator-table td {
+    background: var(--frappe-sign-card-bg);
+}
+
+/* Portal and modal */
+
+.frappe-sign-consent-notice {
+    background: var(--frappe-sign-muted-bg);
+    border-color: var(--frappe-sign-warning);
+    color: var(--frappe-sign-text);
+}
+
+.frappe-sign-modal-backdrop {
+    background: rgba(15, 23, 42, 0.72);
+}
+
+/* Keep actual signature/image/document content readable and predictable */
+
+.frappe-sign-typed-signature {
+    color: #111827;
+}
+
+.frappe-sign-draw-canvas {
+    background-color: #ffffff;
+}
+
+.frappe-sign-signing-field,
+.frappe-sign-field-box {
+    color: #0f172a;
+}
+
+/* Dark theme explicit fallbacks for Frappe builds that do not expose all vars */
+
+[data-theme="dark"] .frappe-sign,
+.dark-theme .frappe-sign,
+body[data-theme="dark"] .frappe-sign {
+    --frappe-sign-muted-bg: var(--subtle-fg, #1f2937);
+    --frappe-sign-card-bg: var(--card-bg, var(--fg-color, #171717));
+    --frappe-sign-control-bg: var(--control-bg, #1f1f1f);
+    --frappe-sign-hover-bg: var(--highlight-color, #262626);
+    --frappe-sign-document-bg: var(--bg-color, #111111);
+    --frappe-sign-text: var(--text-color, #f3f4f6);
+    --frappe-sign-heading: var(--heading-color, #ffffff);
+    --frappe-sign-text-muted: var(--text-muted, #a3a3a3);
+}
+
+[data-theme="dark"] .frappe-sign-pdf-page,
+.dark-theme .frappe-sign-pdf-page,
+body[data-theme="dark"] .frappe-sign-pdf-page,
+[data-theme="dark"] .frappe-sign-page-thumb,
+.dark-theme .frappe-sign-page-thumb,
+body[data-theme="dark"] .frappe-sign-page-thumb,
+[data-theme="dark"] .frappe-sign-profile-preview-slot,
+.dark-theme .frappe-sign-profile-preview-slot,
+body[data-theme="dark"] .frappe-sign-profile-preview-slot {
+    background-color: #ffffff;
+    color: #111827;
+}
+
+[data-theme="dark"] .frappe-sign-profile-preview-slot,
+.dark-theme .frappe-sign-profile-preview-slot,
+body[data-theme="dark"] .frappe-sign-profile-preview-slot {
+    background:
+        linear-gradient(45deg, #f8fafc 25%, transparent 25%),
+        linear-gradient(-45deg, #f8fafc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f8fafc 75%),
+        linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
+    background-color: #ffffff;
+    background-size: 18px 18px;
+    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+}
+
+/* Utility buttons in list views */
+
+.frappe-sign-list-view-button {
+    padding: 2px 8px;
+    line-height: 1.4;
+    font-size: 11px;
+}
+
