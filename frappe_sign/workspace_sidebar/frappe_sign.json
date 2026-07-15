@@ -12,6 +12,18 @@
    "icon": "signature",
    "indent": 0,
    "keep_closed": 0,
+   "label": "Sign Document",
+   "link_to": "frappe-sign-sign",
+   "link_type": "Page",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "shield-question-mark",
+   "indent": 0,
+   "keep_closed": 0,
    "label": "Signing Requests",
    "link_to": "Frappe Sign Request",
    "link_type": "DocType",
@@ -103,7 +115,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-09 17:05:09.917143",
+ "modified": "2026-07-15 12:33:13.176971",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Frappe Sign",

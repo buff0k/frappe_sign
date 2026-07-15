@@ -1482,3 +1482,61 @@ body[data-theme="dark"] .frappe-sign-profile-preview-slot {
     font-size: 11px;
 }
 
+/* Desk User Signing Page
+   ========================================================================== */
+
+.frappe-sign-desk-sign {
+    max-width: 1280px;
+}
+
+.frappe-sign-desk-sign-card {
+    background: var(--frappe-sign-card-bg);
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.frappe-sign-desk-sign-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.frappe-sign-desk-sign-header h3 {
+    margin: 0 0 6px;
+}
+
+.frappe-sign-desk-request-summary {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--frappe-sign-border);
+    border-radius: 8px;
+    background: var(--frappe-sign-muted-bg);
+}
+
+.frappe-sign-desk-request-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    color: var(--frappe-sign-text-muted);
+    font-size: 12px;
+}
+
+.frappe-sign-desk-request-meta span {
+    color: var(--frappe-sign-text-muted);
+}
+
+#frappe-sign-desk-signing-area .frappe-sign-header {
+    margin-top: 18px;
+}
+
+@media (max-width: 768px) {
+    .frappe-sign-desk-sign-header {
+        flex-direction: column;
+    }
+}
