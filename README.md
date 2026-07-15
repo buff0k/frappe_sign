@@ -34,6 +34,7 @@ It is designed to work inside the Frappe ecosystem while keeping a clear audit t
 - Provide portal pages for signature profile management and documents awaiting signature.
 - Provide a Desk validator page for independent document validation.
 - Provide reusable signing templates.
+- Exposes Some API functionality for use in your other Frappe Apps.
 
 ## South African electronic signature clarification
 
