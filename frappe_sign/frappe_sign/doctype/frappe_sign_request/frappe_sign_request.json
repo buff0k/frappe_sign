@@ -8,45 +8,43 @@
  "field_order": [
   "section_break_uhsm",
   "amended_from",
-  "request_title",
-  "created_by",
   "section_break_pbwo",
   "source_section",
+  "request_title",
   "source_type",
+  "signing_mode",
   "source_doctype",
   "source_name",
+  "submit_source_on_completion",
+  "attach_signed_pdf_to_source",
   "source_title",
   "print_format",
-  "section_break_bgsl",
-  "workflow_section",
-  "status",
-  "signing_mode",
-  "current_signing_order",
-  "expires_on",
-  "completed_on",
-  "cancelled_on",
-  "declined_on",
-  "decline_reason",
-  "section_break_ahhb",
   "files_section",
   "source_pdf",
   "signed_pdf",
   "audit_certificate",
   "certificate_signed_pdf",
-  "section_break_zdzk",
+  "signers_section",
+  "signers",
+  "technical_details_tab",
+  "fields_section",
+  "created_by",
+  "fields",
+  "section_break_hftb",
   "hashes_section",
   "source_pdf_hash",
   "signed_pdf_hash",
   "certificate_signed_pdf_hash",
   "audit_chain_hash",
   "tamper_status",
-  "options_section",
-  "submit_source_on_completion",
-  "attach_signed_pdf_to_source",
-  "signers_section",
-  "signers",
-  "fields_section",
-  "fields"
+  "workflow_section",
+  "status",
+  "current_signing_order",
+  "expires_on",
+  "completed_on",
+  "cancelled_on",
+  "declined_on",
+  "decline_reason"
  ],
  "fields": [
   {
@@ -101,6 +99,7 @@
    "options": "source_doctype"
   },
   {
+   "depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "fieldname": "source_title",
    "fieldtype": "Data",
    "label": "Source Title",
@@ -112,10 +111,6 @@
    "fieldtype": "Link",
    "label": "Print Format",
    "options": "Print Format"
-  },
-  {
-   "fieldname": "section_break_bgsl",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "workflow_section",
@@ -176,10 +171,6 @@
    "label": "Decline Reason"
   },
   {
-   "fieldname": "section_break_ahhb",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "files_section",
    "fieldtype": "Column Break",
    "label": "Files"
@@ -210,10 +201,6 @@
    "fieldtype": "Attach",
    "label": "Certificate Signed PDF",
    "read_only": 1
-  },
-  {
-   "fieldname": "section_break_zdzk",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "hashes_section",
@@ -254,18 +241,15 @@
    "read_only": 1
   },
   {
-   "fieldname": "options_section",
-   "fieldtype": "Section Break",
-   "label": "Options"
-  },
-  {
    "default": "0",
+   "depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "fieldname": "submit_source_on_completion",
    "fieldtype": "Check",
    "label": "Submit Source On Completion"
   },
   {
-   "default": "1",
+   "default": "0",
+   "depends_on": "eval:doc.source_type==\"Frappe Document\"",
    "fieldname": "attach_signed_pdf_to_source",
    "fieldtype": "Check",
    "label": "Attach Signed PDF To Source"
@@ -298,6 +282,15 @@
    "fieldtype": "Select",
    "label": "Source Type",
    "options": "Frappe Document\nUploaded PDF"
+  },
+  {
+   "fieldname": "technical_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Technical Details"
+  },
+  {
+   "fieldname": "section_break_hftb",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
@@ -310,7 +303,7 @@
    "link_fieldname": "frappe_sign_request"
   }
  ],
- "modified": "2026-07-12 19:41:55.532464",
+ "modified": "2026-07-23 09:09:58.215867",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Request",

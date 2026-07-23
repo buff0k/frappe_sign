@@ -1540,3 +1540,106 @@ body[data-theme="dark"] .frappe-sign-profile-preview-slot {
         flex-direction: column;
     }
 }
+
+/* Public signing modal hardening
+   ========================================================================== */
+
+.frappe-sign-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.72) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.frappe-sign-modal-backdrop[hidden] {
+    display: none !important;
+}
+
+.frappe-sign-modal {
+    width: min(820px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d8dd !important;
+    border-radius: 10px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    padding: 16px;
+}
+
+.frappe-sign-modal,
+.frappe-sign-modal div,
+.frappe-sign-modal p,
+.frappe-sign-modal span,
+.frappe-sign-modal label,
+.frappe-sign-modal h1,
+.frappe-sign-modal h2,
+.frappe-sign-modal h3,
+.frappe-sign-modal h4,
+.frappe-sign-modal h5,
+.frappe-sign-modal h6,
+.frappe-sign-modal strong,
+.frappe-sign-modal small {
+    color: #111827 !important;
+}
+
+.frappe-sign-modal .frappe-sign-muted,
+.frappe-sign-modal .frappe-sign-help,
+.frappe-sign-modal .frappe-sign-draw-pad-note {
+    color: #6b7280 !important;
+}
+
+.frappe-sign-modal-header,
+.frappe-sign-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.frappe-sign-modal-header {
+    margin-bottom: 12px;
+}
+
+.frappe-sign-modal-footer {
+    margin-top: 12px;
+    justify-content: flex-end;
+}
+
+.frappe-sign-modal h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.frappe-sign-modal input,
+.frappe-sign-modal textarea,
+.frappe-sign-modal select,
+.frappe-sign-modal .form-control {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d1d8dd !important;
+}
+
+.frappe-sign-modal input::placeholder,
+.frappe-sign-modal textarea::placeholder {
+    color: #6b7280 !important;
+}
+
+.frappe-sign-modal .btn-default {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+    border-color: #d1d8dd !important;
+}
+
+.frappe-sign-modal .btn-primary {
+    color: #ffffff !important;
+}
+
+.frappe-sign-draw-canvas {
+    background-color: #ffffff !important;
+}

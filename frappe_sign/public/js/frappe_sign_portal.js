@@ -236,6 +236,18 @@ class FrappeSignPortal {
         }).promise;
     }
 
+    async refresh_context() {
+        const response = await frappe.call({
+            method: "frappe_sign.api.signing.get_signing_context",
+            args: {
+                token: this.token,
+            },
+            freeze: false,
+        });
+
+        this.context = response.message;
+    }
+
     render_fields() {
         const fields = this.context.fields || [];
 
@@ -590,6 +602,8 @@ class FrappeSignPortal {
         this.context.profile.initials_image = response.message.initials_image;
         this.context.profile.signature_text = response.message.signature_text;
 
+        await this.refresh_context();
+
         frappe.show_alert({
             message: __("Saved."),
             indicator: "green",
@@ -624,6 +638,8 @@ class FrappeSignPortal {
 
         this.context.profile.consent = response.message.consent;
         this.context.profile.consent_on = response.message.consent_on;
+
+        await this.refresh_context();
 
         frappe.show_alert({
             message: __("Consent saved."),
