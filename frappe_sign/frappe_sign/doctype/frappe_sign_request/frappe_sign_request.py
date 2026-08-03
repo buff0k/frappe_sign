@@ -257,6 +257,7 @@ class FrappeSignRequest(Document):
             "source_name",
             "print_format",
             "source_pdf",
+            "attach_signed_pdf_field",
         ]
 
         for fieldname in locked_fields:

@@ -33,7 +33,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Event Type",
-   "options": "Created\nPrepared\nSent\nViewed\nSigned\nDeclined\nCompleted\nCancelled\nExpired\nPDF Generated\nPDF Stamped\nCertificate Generated\nTamper Check Passed\nTamper Check Failed\nPermission Denied\nCertificate Applied"
+   "options": "Created\nPrepared\nSent\nViewed\nSigned\nDeclined\nCompleted\nCancelled\nExpired\nPDF Generated\nPDF Stamped\nCertificate Generated\nTamper Check Passed\nTamper Check Failed\nPermission Denied\nCertificate Applied\nSigned PDF Attached To Source\nSource Document Submitted"
   },
   {
    "fieldname": "signer_email",
@@ -93,7 +93,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-13 09:09:04.296186",
+ "modified": "2026-08-03 11:25:05.590466",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Event",

@@ -5,10 +5,11 @@ from urllib.parse import urlparse
 
 import frappe
 
+from frappe_sign.utils.notifications import CLOSED_REQUEST_STATUSES
+
 
 OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
 ACTIVE_REQUEST_STATUSES = ("Sent", "Viewed", "Partially Signed")
-CLOSED_REQUEST_STATUSES = ("Completed", "Declined", "Expired", "Cancelled", "Failed")
 
 
 @frappe.whitelist()

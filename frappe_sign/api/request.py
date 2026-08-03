@@ -8,6 +8,7 @@ from frappe_sign.permissions import is_frappe_sign_sender
 from frappe_sign.utils.audit import append_event, sha256_bytes
 from frappe_sign.utils.files import attach_private_file, get_file_bytes
 from frappe_sign.utils.notifications import (
+    CLOSED_REQUEST_STATUSES,
     get_current_notification_signers,
     send_signing_request_email,
 )
@@ -99,6 +100,7 @@ def create_from_source(doctype, name, print_format=None):
             "expires_on": add_days(now_datetime(), expiry_days),
             "source_pdf_hash": pdf_hash,
             "attach_signed_pdf_to_source": source_config.attach_signed_pdf_to_source,
+            "attach_signed_pdf_field": source_config.attach_signed_pdf_field,
             "submit_source_on_completion": source_config.allow_submit_source_on_completion,
             "tamper_status": "Not Checked",
         }
@@ -244,7 +246,7 @@ def cancel_request(request_name):
     if not frappe.has_permission("Frappe Sign Request", "write", doc=request):
         frappe.throw("You do not have permission to cancel this request.")
 
-    if request.status in ("Completed", "Cancelled", "Declined", "Expired"):
+    if request.status in CLOSED_REQUEST_STATUSES:
         frappe.throw(f"Cannot cancel a request with status {request.status}.")
 
     request.status = "Cancelled"
@@ -431,7 +433,7 @@ def get_signer_link(request_name, signer_row_name):
     if signer.status in CLOSED_SIGNER_STATUSES:
         frappe.throw(f"Cannot copy a signing link for a signer with status {signer.status}.")
 
-    if request.status in ("Completed", "Declined", "Expired", "Cancelled", "Failed"):
+    if request.status in CLOSED_REQUEST_STATUSES:
         frappe.throw(f"Cannot copy a signing link for a request with status {request.status}.")
 
     signing_link = ensure_signer_link(request, signer)

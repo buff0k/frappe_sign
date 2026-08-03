@@ -17,6 +17,7 @@
   "source_name",
   "submit_source_on_completion",
   "attach_signed_pdf_to_source",
+  "attach_signed_pdf_field",
   "source_title",
   "print_format",
   "files_section",
@@ -255,6 +256,13 @@
    "label": "Attach Signed PDF To Source"
   },
   {
+   "depends_on": "eval:doc.source_type==\"Frappe Document\" && doc.attach_signed_pdf_to_source",
+   "description": "Which Attach field on the Source DocType the signed PDF should be attached to. Leave blank to just attach it as a private file without setting a specific field.",
+   "fieldname": "attach_signed_pdf_field",
+   "fieldtype": "Select",
+   "label": "Attach Signed PDF Field"
+  },
+  {
    "fieldname": "signers_section",
    "fieldtype": "Section Break",
    "label": "Signers"
@@ -303,7 +311,7 @@
    "link_fieldname": "frappe_sign_request"
   }
  ],
- "modified": "2026-07-23 09:09:58.215867",
+ "modified": "2026-08-03 11:22:16.277237",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Request",

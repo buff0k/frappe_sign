@@ -12,6 +12,7 @@
   "enabled",
   "allow_submit_source_on_completion",
   "attach_signed_pdf_to_source",
+  "attach_signed_pdf_field",
   "allow_external_signers",
   "required_sender_role",
   "require_template",
@@ -49,10 +50,17 @@
    "label": "Allow Submit Source On Completion"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "attach_signed_pdf_to_source",
    "fieldtype": "Check",
    "label": "Attach Signed PDF To Source"
+  },
+  {
+   "depends_on": "eval:doc.attach_signed_pdf_to_source",
+   "description": "Which Attach field on the Source DocType the signed PDF should be attached to. Leave blank to just attach it as a private file without setting a specific field.",
+   "fieldname": "attach_signed_pdf_field",
+   "fieldtype": "Select",
+   "label": "Attach Signed PDF Field"
   },
   {
    "default": "0",
@@ -85,7 +93,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-07 13:43:12.667190",
+ "modified": "2026-08-03 11:19:58.557977",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Source DocType",

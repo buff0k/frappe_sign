@@ -13,7 +13,11 @@ from frappe_sign.api.request import create_file_hash
 from frappe_sign.utils.audit import append_event, sha256_bytes
 from frappe_sign.utils.certificates import generate_audit_certificate
 from frappe_sign.utils.files import attach_private_file, get_file_bytes
-from frappe_sign.utils.notifications import send_completion_notification, send_progress_notification
+from frappe_sign.utils.notifications import (
+    CLOSED_REQUEST_STATUSES,
+    send_completion_notification,
+    send_progress_notification,
+)
 from frappe_sign.utils.pdf_stamping import stamp_pdf_fields
 from frappe_sign.utils.signatures import attach_signature_png
 from frappe_sign.utils.tokens import hash_signing_token
@@ -24,7 +28,6 @@ from frappe_sign.utils.certificate_records import create_audit_certificate_recor
 
 OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
 CLOSED_SIGNER_STATUSES = ("Signed", "Declined", "Skipped")
-CLOSED_REQUEST_STATUSES = ("Completed", "Declined", "Expired", "Cancelled", "Failed")
 
 
 def _get_signer_from_token(token):
@@ -718,6 +721,100 @@ def complete_request_with_audit_certificate(request):
     send_completion_notification(request)
 
     submit_completed_request(request.name)
+
+    request.reload()
+    apply_source_document_actions(request)
+
+
+def apply_source_document_actions(request):
+    """Attaches the final signed PDF back onto the source document (and
+    submits it) once a request has completed, per its
+    attach_signed_pdf_to_source/attach_signed_pdf_field/
+    submit_source_on_completion fields (each snapshotted from Frappe Sign
+    Settings' per-DocType configuration at request-creation time, see
+    create_from_source() in api/request.py).
+
+    Best-effort: a problem with the source document (deleted since, an
+    Attach field that rejects the value, a submit validation failure, etc.)
+    must not undo the signing request's own already-successful completion,
+    so failures here are logged rather than raised.
+    """
+    if request.source_type != "Frappe Document":
+        return
+
+    if not request.source_doctype or not request.source_name:
+        return
+
+    if not frappe.db.exists(request.source_doctype, request.source_name):
+        return
+
+    try:
+        if request.attach_signed_pdf_to_source:
+            final_pdf_url = request.certificate_signed_pdf or request.signed_pdf
+
+            if final_pdf_url:
+                pdf_bytes = get_file_bytes(final_pdf_url)
+                file_doc = attach_private_file(
+                    request.source_doctype,
+                    request.source_name,
+                    f"{frappe.scrub(request.source_doctype)}-{request.source_name}-signed.pdf",
+                    pdf_bytes,
+                )
+
+                if request.attach_signed_pdf_field:
+                    frappe.db.set_value(
+                        request.source_doctype,
+                        request.source_name,
+                        request.attach_signed_pdf_field,
+                        file_doc.file_url,
+                        update_modified=False,
+                    )
+
+                    # Tag the File itself as belonging to that field too -
+                    # otherwise Frappe's own attach_files_to_document()
+                    # on_update hook (frappe/core/doctype/file/utils.py)
+                    # won't recognize this File as already attached to the
+                    # field and will create a second, duplicate File the
+                    # next time the source document is saved/submitted.
+                    frappe.db.set_value(
+                        "File",
+                        file_doc.name,
+                        "attached_to_field",
+                        request.attach_signed_pdf_field,
+                        update_modified=False,
+                    )
+
+                append_event(
+                    request.name,
+                    "Signed PDF Attached To Source",
+                    details={
+                        "source_doctype": request.source_doctype,
+                        "source_name": request.source_name,
+                        "file_url": file_doc.file_url,
+                        "attach_signed_pdf_field": request.attach_signed_pdf_field,
+                    },
+                )
+
+        if request.submit_source_on_completion:
+            source_doc = frappe.get_doc(request.source_doctype, request.source_name)
+
+            if source_doc.meta.is_submittable and source_doc.docstatus == 0:
+                source_doc.flags.ignore_permissions = True
+                source_doc.submit()
+
+                append_event(
+                    request.name,
+                    "Source Document Submitted",
+                    details={
+                        "source_doctype": request.source_doctype,
+                        "source_name": request.source_name,
+                    },
+                )
+    except Exception:
+        frappe.log_error(
+            title="Frappe Sign: source document action failed",
+            message=frappe.get_traceback(),
+        )
 
 
 def apply_audit_certificate_to_signed_pdf(request_name):

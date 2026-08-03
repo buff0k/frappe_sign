@@ -5,6 +5,20 @@ frappe.ui.form.on("Frappe Sign Settings", {
     refresh(frm) {
         frm.trigger("add_certificate_actions");
         frm.trigger("set_certificate_indicator");
+        frm.trigger("set_queries");
+    },
+
+    set_queries(frm) {
+        frm.set_query("default_print_format", "configured_doctypes", (doc, cdt, cdn) => {
+            const row = locals[cdt][cdn];
+
+            return {
+                filters: {
+                    doc_type: row.source_doctype,
+                    disabled: 0,
+                },
+            };
+        });
     },
 
     add_certificate_actions(frm) {
@@ -203,3 +217,39 @@ frappe.ui.form.on("Frappe Sign Settings", {
         );
     },
 });
+
+frappe.ui.form.on("Frappe Sign Source DocType", {
+    source_doctype(frm, cdt, cdn) {
+        update_attach_signed_pdf_field_options(frm, cdt, cdn);
+    },
+});
+
+function update_attach_signed_pdf_field_options(frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
+
+    const apply_options = () => {
+        let options = [""];
+
+        if (row.source_doctype) {
+            options = options.concat(
+                (frappe.get_meta(row.source_doctype).fields || [])
+                    .filter((df) => ["Attach", "Attach Image"].includes(df.fieldtype))
+                    .map((df) => df.fieldname)
+            );
+        }
+
+        frm.fields_dict.configured_doctypes.grid.update_docfield_property(
+            "attach_signed_pdf_field",
+            "options",
+            options.join("\n")
+        );
+
+        frappe.model.set_value(cdt, cdn, "attach_signed_pdf_field", "");
+    };
+
+    if (row.source_doctype) {
+        frappe.model.with_doctype(row.source_doctype, apply_options);
+    } else {
+        apply_options();
+    }
+}

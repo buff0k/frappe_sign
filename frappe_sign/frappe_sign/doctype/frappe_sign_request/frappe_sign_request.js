@@ -15,6 +15,7 @@ frappe.ui.form.on("Frappe Sign Request", {
         frm.trigger("set_indicators");
         frm.trigger("add_actions");
         frm.trigger("lock_completed_request");
+        frm.trigger("set_attach_signed_pdf_field_options");
 
         if (frm.doc.status === "Completed") {
             frm.add_custom_button(__("Evidence Certificates"), () => {
@@ -152,7 +153,12 @@ frappe.ui.form.on("Frappe Sign Request", {
 
                 await frm.reload_doc();
             }, __("Frappe Sign"));
+        }
 
+        // Cancellable for any not-yet-concluded status (Draft/Prepared included) -
+        // server-side has_frappe_sign_request_permission() already restricts this
+        // to a Frappe Sign Manager (any request) or the request's own Sender.
+        if (["Draft", "Prepared", "Sent", "Viewed", "Partially Signed"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Cancel Request"), async () => {
                 frappe.confirm(
                     __("Cancel this signing request?"),
@@ -186,7 +192,7 @@ frappe.ui.form.on("Frappe Sign Request", {
     },
 
     lock_completed_request(frm) {
-        if (["Completed", "Cancelled", "Declined", "Expired"].includes(frm.doc.status)) {
+        if (["Completed", "Cancelled", "Declined", "Expired", "Failed"].includes(frm.doc.status)) {
             frm.set_read_only();
         }
     },
@@ -276,8 +282,34 @@ frappe.ui.form.on("Frappe Sign Request", {
         frm.set_value("source_name", null);
         frm.set_value("source_title", null);
         frm.set_value("print_format", null);
+        frm.set_value("attach_signed_pdf_field", null);
 
+        frm.trigger("set_attach_signed_pdf_field_options");
         await frm.trigger("set_default_print_format");
+    },
+
+    set_attach_signed_pdf_field_options(frm) {
+        const source_doctype = frm.doc.source_doctype;
+
+        const apply_options = () => {
+            let options = [""];
+
+            if (source_doctype) {
+                options = options.concat(
+                    (frappe.get_meta(source_doctype).fields || [])
+                        .filter((df) => ["Attach", "Attach Image"].includes(df.fieldtype))
+                        .map((df) => df.fieldname)
+                );
+            }
+
+            frm.set_df_property("attach_signed_pdf_field", "options", options);
+        };
+
+        if (source_doctype) {
+            frappe.model.with_doctype(source_doctype, apply_options);
+        } else {
+            apply_options();
+        }
     },
 
     async source_name(frm) {
