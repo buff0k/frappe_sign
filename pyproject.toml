@@ -11,8 +11,8 @@ dependencies = [
 	"pypdf>=5.0.0",
 	"reportlab>=4.2.0",
 	"pillow>=10.0.0",
-	"cryptography>=42.0.0",
-	"pyhanko>=0.25.0"
+	"cryptography~=46.0.0",
+	"pyhanko>=0.25.0,<0.35.0"
 ]
 
 [build-system]
