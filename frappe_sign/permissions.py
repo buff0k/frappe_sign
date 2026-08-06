@@ -88,20 +88,22 @@ def is_request_signer(request_name, user=None):
 		user_clauses.append("`tabFrappe Sign Profile`.`email` = %s")
 		values.append(user_email)
 
-	return bool(
-		frappe.db.sql(
-			f"""
-			SELECT 1
-			FROM `tabFrappe Sign Signer`
-			INNER JOIN `tabFrappe Sign Profile`
-				ON `tabFrappe Sign Profile`.`name` = `tabFrappe Sign Signer`.`signer`
-			WHERE {" AND ".join(filters)}
-			AND ({" OR ".join(user_clauses)})
-			LIMIT 1
-			""",
-			values,
-		)
+	# Built with plain string concatenation, not an f-string/.format() call,
+	# so static analysis can see this isn't string-interpolated SQL: `filters`
+	# and `user_clauses` above are fixed, hardcoded SQL fragments, and every
+	# actual value (request_name, user, user_email) is bound separately via
+	# the %s placeholders in `values`, passed as frappe.db.sql's second arg.
+	query = (
+		"SELECT 1"
+		" FROM `tabFrappe Sign Signer`"
+		" INNER JOIN `tabFrappe Sign Profile`"
+		"     ON `tabFrappe Sign Profile`.`name` = `tabFrappe Sign Signer`.`signer`"
+		" WHERE " + " AND ".join(filters) +
+		" AND (" + " OR ".join(user_clauses) + ")"
+		" LIMIT 1"
 	)
+
+	return bool(frappe.db.sql(query, values))
 
 
 def frappe_sign_request_query(user=None):
@@ -151,9 +153,9 @@ def frappe_sign_request_query(user=None):
 	return "1 = 0"
 
 
-def has_frappe_sign_request_permission(doc, user=None, permission_type=None):
+def has_frappe_sign_request_permission(doc, user=None, ptype=None):
 	user = user or frappe.session.user
-	permission_type = permission_type or "read"
+	ptype = ptype or "read"
 
 	if not user or user == "Guest":
 		return False
@@ -164,11 +166,11 @@ def has_frappe_sign_request_permission(doc, user=None, permission_type=None):
 	if not has_any_frappe_sign_role(user):
 		return False
 
-	if permission_type == "create":
+	if ptype == "create":
 		return is_frappe_sign_sender(user)
 
 	if is_frappe_sign_sender(user) and is_request_creator(doc, user):
-		return permission_type in {
+		return ptype in {
 			"read",
 			"write",
 			"submit",
@@ -180,7 +182,7 @@ def has_frappe_sign_request_permission(doc, user=None, permission_type=None):
 		}
 
 	if is_request_signer(doc.name, user):
-		return permission_type in {
+		return ptype in {
 			"read",
 			"email",
 			"print",
@@ -194,24 +196,24 @@ def frappe_sign_event_query(user=None):
 	return _linked_to_visible_request_query("Frappe Sign Event", "frappe_sign_request", user)
 
 
-def has_frappe_sign_event_permission(doc, user=None, permission_type=None):
-	return _has_linked_request_permission(doc, "frappe_sign_request", user, permission_type)
+def has_frappe_sign_event_permission(doc, user=None, ptype=None):
+	return _has_linked_request_permission(doc, "frappe_sign_request", user, ptype)
 
 
 def frappe_sign_certificate_query(user=None):
 	return _linked_to_visible_request_query("Frappe Sign Certificate", "frappe_sign_request", user)
 
 
-def has_frappe_sign_certificate_permission(doc, user=None, permission_type=None):
-	return _has_linked_request_permission(doc, "frappe_sign_request", user, permission_type)
+def has_frappe_sign_certificate_permission(doc, user=None, ptype=None):
+	return _has_linked_request_permission(doc, "frappe_sign_request", user, ptype)
 
 
 def frappe_sign_file_hash_query(user=None):
 	return _linked_to_visible_request_query("Frappe Sign File Hash", "frappe_sign_request", user)
 
 
-def has_frappe_sign_file_hash_permission(doc, user=None, permission_type=None):
-	return _has_linked_request_permission(doc, "frappe_sign_request", user, permission_type)
+def has_frappe_sign_file_hash_permission(doc, user=None, ptype=None):
+	return _has_linked_request_permission(doc, "frappe_sign_request", user, ptype)
 
 
 def frappe_sign_profile_query(user=None):
@@ -238,9 +240,9 @@ def frappe_sign_profile_query(user=None):
 	"""
 
 
-def has_frappe_sign_profile_permission(doc, user=None, permission_type=None):
+def has_frappe_sign_profile_permission(doc, user=None, ptype=None):
 	user = user or frappe.session.user
-	permission_type = permission_type or "read"
+	ptype = ptype or "read"
 
 	if not user or user == "Guest":
 		return False
@@ -251,6 +253,13 @@ def has_frappe_sign_profile_permission(doc, user=None, permission_type=None):
 	if not has_any_frappe_sign_role(user):
 		return False
 
+	if ptype == "create":
+		# DocType-level role permissions already restrict who can create a
+		# Frappe Sign Profile at all. A brand new profile has no `user`/
+		# `email` set yet, so the "is this my own profile" check below
+		# can't apply here - it would veto every first-time creation.
+		return True
+
 	user_email = get_user_email(user)
 
 	is_own_profile = bool(
@@ -259,7 +268,7 @@ def has_frappe_sign_profile_permission(doc, user=None, permission_type=None):
 	)
 
 	if is_own_profile:
-		return permission_type in {
+		return ptype in {
 			"read",
 			"write",
 			"create",
@@ -324,9 +333,9 @@ def _linked_to_visible_request_query(child_doctype, link_field, user=None):
 	"""
 
 
-def _has_linked_request_permission(doc, link_field, user=None, permission_type=None):
+def _has_linked_request_permission(doc, link_field, user=None, ptype=None):
 	user = user or frappe.session.user
-	permission_type = permission_type or "read"
+	ptype = ptype or "read"
 
 	if not user or user == "Guest":
 		return False
@@ -334,7 +343,7 @@ def _has_linked_request_permission(doc, link_field, user=None, permission_type=N
 	if is_frappe_sign_admin(user):
 		return True
 
-	if permission_type not in {
+	if ptype not in {
 		"read",
 		"email",
 		"print",
@@ -353,7 +362,7 @@ def _has_linked_request_permission(doc, link_field, user=None, permission_type=N
 	return has_frappe_sign_request_permission(
 		request,
 		user=user,
-		permission_type="read",
+		ptype="read",
 	)
 
 

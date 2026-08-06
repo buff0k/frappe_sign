@@ -14,6 +14,9 @@ It is designed to work inside the Frappe ecosystem while keeping a clear audit t
 - Support sequential signing.
 - Support sequential signing cohorts, for example `1, 1, 2, 3`.
 - Generate stable per-signer signing links.
+- Cancel a not-yet-concluded signing request, as its creator or as a Frappe Sign Manager.
+- Optionally attach the final signed PDF back onto the source document (and into a specific Attach field) once a request completes.
+- Optionally submit the source document once its signing request completes.
 - Maintain a reusable signer profile with signature and initials.
 - Support drawn, uploaded, and typed signatures.
 - Require signer consent before signing, if enabled.
@@ -213,8 +216,8 @@ Suggested use:
 | Role | Purpose |
 | --- | --- |
 | Frappe Sign User | Can maintain a signing profile and sign assigned documents. |
-| Frappe Sign Sender | Can create and send signing requests, subject to configured source DocType restrictions. |
-| Frappe Sign Manager | Can manage Frappe Sign settings, templates, requests, certificates, and audit records. |
+| Frappe Sign Sender | Can create and send signing requests, subject to configured source DocType restrictions, and can cancel a not-yet-concluded request they created. |
+| Frappe Sign Manager | Can manage Frappe Sign settings and templates, and can view, cancel (if not yet concluded), and review any signing request. Certificate and Event records are read-only evidence for every role, including Frappe Sign Manager - by design, they are never edited or deleted. |
 | System Manager | Full administrative access. |
 
 ## Initial setup
@@ -378,10 +381,18 @@ Required Sender Role
 Require Template
 Default Template
 Attach Signed PDF To Source
+Attach Signed PDF Field
 Allow Submit Source On Completion
 ```
 
-This controls whether the Frappe Sign button is available from a source document.
+`Source DocType`, `Enabled`, and `Required Sender Role` control whether the Frappe Sign button is available from a source document.
+
+`Attach Signed PDF To Source` and `Attach Signed PDF Field`/`Allow Submit Source On Completion` control what happens to the source document once its signing request completes:
+
+- When `Attach Signed PDF To Source` is checked, the final signed PDF is attached to the source document as a private file once the request completes. If `Attach Signed PDF Field` is also set (a Select of the source DocType's own Attach/Attach Image fields), that field is populated with the attached file so it shows directly on the source document's form.
+- When `Allow Submit Source On Completion` is checked, the source document is submitted (if it is submittable and still in Draft) once the request completes.
+
+Both settings are snapshotted onto the created Frappe Sign Request at creation time (`Attach Signed PDF To Source`, `Attach Signed PDF Field`, `Submit Source On Completion` fields on the request), so later changes to Frappe Sign Settings do not retroactively affect requests already in progress.
 
 ## Frappe Sign Profile
 
@@ -635,12 +646,13 @@ A template defines:
 Template Name
 Source DocType
 Print Format
-Signer Labels
-Template Fields
+Description
 Enabled
+Signers
+Fields
 ```
 
-Template signer labels are placeholders such as:
+`Signers` is a child table of placeholder signer labels (fieldname `signer_label` on each row), for example:
 
 ```text
 Employee
@@ -702,6 +714,28 @@ When all required signers have signed:
 8. Frappe Sign Certificate evidence records are created.
 9. Completion notifications are sent.
 10. The request is submitted.
+11. If the source DocType is configured for it, the signed PDF is attached to the source document (and into its configured Attach field), and/or the source document is submitted. See [Configured source DocTypes](#configured-source-doctypes).
+
+## Cancelling a request
+
+A signing request can be cancelled while it is not yet concluded, that is, while its status is one of:
+
+```text
+Draft
+Prepared
+Sent
+Viewed
+Partially Signed
+```
+
+A request that is already `Completed`, `Declined`, `Expired`, `Cancelled`, or `Failed` cannot be cancelled.
+
+Who can cancel:
+
+- A Frappe Sign Manager (or System Manager) can cancel any not-yet-concluded request.
+- A Frappe Sign Sender can cancel a not-yet-concluded request they created.
+
+To cancel, open the Frappe Sign Request and use `Frappe Sign > Cancel Request`. Any signer rows that have not yet signed or declined are marked `Skipped`, `cancelled_on` is recorded, and a `Cancelled` event is appended to the audit trail.
 
 ## Audit certificate
 
@@ -809,6 +843,8 @@ Tamper Check Passed
 Tamper Check Failed
 Permission Denied
 Certificate Applied
+Signed PDF Attached To Source
+Source Document Submitted
 ```
 
 Events are chained using hashes.

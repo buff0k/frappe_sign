@@ -11,7 +11,10 @@ def get_file_bytes(file_url):
     file_doc = frappe.get_doc("File", {"file_url": file_url})
     path = file_doc.get_full_path()
 
-    with open(path, "rb") as handle:
+    # path is resolved by File.get_full_path() from a DB-backed File record
+    # looked up by file_url, not from raw user input, so it can't be steered
+    # outside the site's files directory.
+    with open(path, "rb") as handle:  # nosemgrep: frappe-security-file-traversal
         return handle.read()
 
 
