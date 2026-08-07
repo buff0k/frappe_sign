@@ -148,6 +148,13 @@ def send_next_signer_notifications(request, completed_signer):
 	if request.status in CLOSED_REQUEST_STATUSES:
 		return
 
+	# Deferred import: api.request already imports this module (for
+	# get_current_notification_signers/send_signing_request_email), so a
+	# top-level import here would be circular.
+	from frappe_sign.api.request import ensure_signer_link
+
+	notified_any = False
+
 	for signer in get_current_notification_signers(request):
 		if signer.name == completed_signer.name:
 			continue
@@ -155,13 +162,17 @@ def send_next_signer_notifications(request, completed_signer):
 		if not signer.email:
 			continue
 
-		if not signer.signing_link:
-			continue
+		# A later-order sequential signer never went through send_request/
+		# resend_request (those only touch the *current* order), so their
+		# signing_link is still blank the first time they become eligible -
+		# generate it now instead of silently skipping them.
+		signing_link = ensure_signer_link(request, signer)
+		notified_any = True
 
 		send_signing_request_email(
 			request=request,
 			signer=signer,
-			signing_link=signer.signing_link,
+			signing_link=signing_link,
 			reminder=False,
 		)
 
@@ -175,6 +186,9 @@ def send_next_signer_notifications(request, completed_signer):
 				"triggered_by_signer": completed_signer.name,
 			},
 		)
+
+	if notified_any:
+		request.save(ignore_permissions=True)
 
 
 def send_decline_notifications(request, completed_signer, reason=None):
