@@ -9,6 +9,23 @@ from frappe_sign.api.source import print_format_matches_doctype, validate_source
 from frappe_sign.utils.audit import append_event, sha256_bytes
 from frappe_sign.utils.files import get_file_bytes
 
+# Once a request has left Draft/Prepared, its source/signed PDFs are locked -
+# validate_locked_request() below blocks editing them through this doctype's
+# own form, and utils/file_lock.py's File doc_events block deleting or
+# altering the underlying File record directly (e.g. via the attachment
+# sidebar's "remove" action), which is a separate doctype/permission surface
+# validate() here can't see. Keep both in sync with this one set of statuses.
+LOCKED_STATUSES = (
+    "Sent",
+    "Viewed",
+    "Partially Signed",
+    "Completed",
+    "Declined",
+    "Expired",
+    "Cancelled",
+    "Failed",
+)
+
 
 class FrappeSignRequest(Document):
     def autoname(self):
@@ -239,16 +256,7 @@ class FrappeSignRequest(Document):
         if not old:
             return
 
-        if old.status not in (
-            "Sent",
-            "Viewed",
-            "Partially Signed",
-            "Completed",
-            "Declined",
-            "Expired",
-            "Cancelled",
-            "Failed",
-        ):
+        if old.status not in LOCKED_STATUSES:
             return
 
         locked_fields = [

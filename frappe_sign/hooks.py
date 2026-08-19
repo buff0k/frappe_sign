@@ -33,6 +33,18 @@ has_permission = {
     "Frappe Sign Profile": "frappe_sign.permissions.has_frappe_sign_profile_permission",
     "Frappe Sign Certificate": "frappe_sign.permissions.has_frappe_sign_certificate_permission",
     "Frappe Sign File Hash": "frappe_sign.permissions.has_frappe_sign_file_hash_permission",
+    # Primary defense against deleting/replacing a signing request's PDF out
+    # from under it - see utils/file_lock.py for why this (not a doc_events
+    # hook) is the layer that actually has to do the work.
+    "File": "frappe_sign.utils.file_lock.has_locked_file_permission",
+}
+doc_events = {
+    "File": {
+        # Secondary net for Administrator/ignore_permissions callers, who
+        # bypass has_permission entirely - see utils/file_lock.py.
+        "validate": "frappe_sign.utils.file_lock.guard_file_changes",
+        "on_trash": "frappe_sign.utils.file_lock.guard_file_delete",
+    },
 }
 website_route_rules = [
     {"from_route": "/sign/<token>", "to_route": "frappe_sign_portal"},
