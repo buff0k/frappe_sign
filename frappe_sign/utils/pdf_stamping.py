@@ -14,8 +14,25 @@ def stamp_pdf_fields(base_pdf_bytes, stamp_items):
     """
     Stamp field values onto a PDF.
 
-    Coordinates in stamp_items are expected as ratios from the top-left corner:
-        x_ratio, y_ratio, width_ratio, height_ratio
+    Coordinates in stamp_items are expected as ratios from the top-left corner
+    of the page AS DISPLAYED - the Designer places fields over a pdf.js
+    rendering, which (like every normal PDF viewer) applies the page's own
+    /Rotate value, so a field's ratios are relative to the rotated/displayed
+    width and height, not the raw MediaBox. A source PDF with a non-zero
+    /Rotate (common for a scanned document) has raw MediaBox dimensions that
+    don't match what was actually displayed when the field was placed - e.g.
+    a portrait 612x792 page rotated 90 degrees displays as 792x612 landscape,
+    so a ratio-based x/y computed against the raw 612x792 box lands in the
+    wrong place and, since nothing in that raw coordinate space is being
+    rotated back to match, ends up visually rotated 90 degrees once the page
+    is displayed with its own rotation applied on top.
+
+    transfer_rotation_to_content() bakes the page's /Rotate into its actual
+    content stream (and swaps the MediaBox accordingly) and resets /Rotate to
+    0 - after that, the page's own raw coordinate space IS the displayed
+    coordinate space, so the existing ratio math below (already correct for
+    an unrotated page) just works, and the overlay merges in cleanly with no
+    leftover rotation to cause a mismatch.
 
     PDF coordinates are bottom-left, so y is converted per page.
     """
@@ -33,6 +50,9 @@ def stamp_pdf_fields(base_pdf_bytes, stamp_items):
         stamps_by_page.setdefault(page_number, []).append(item)
 
     for page_index, page in enumerate(reader.pages, start=1):
+        if page.rotation:
+            page.transfer_rotation_to_content()
+
         page_width = float(page.mediabox.width)
         page_height = float(page.mediabox.height)
 
