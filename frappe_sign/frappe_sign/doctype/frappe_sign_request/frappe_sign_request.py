@@ -319,16 +319,54 @@ class FrappeSignRequest(Document):
         self.add_comment("Comment", message)
         self.save(ignore_permissions=True)
 
-    def mark_cancelled(self):
-        self.status = "Cancelled"
-        self.cancelled_on = now_datetime()
-        self.save(ignore_permissions=True)
+    def on_cancel(self):
+        """Fires whenever this (submittable) doctype's own docstatus is
+        cancelled via Frappe's standard Cancel action - the framework-level
+        button every user knows, completely separate from this doctype's own
+        status state machine (Draft/Sent/Viewed/.../Cancelled) that
+        api.request.cancel_request() drives for the in-app "Cancel Request"
+        button. Without this hook, cancelling via the standard button only
+        ever touches docstatus - status stays wherever it was (e.g. "Viewed")
+        forever, and send_daily_signing_reminders() (utils/notifications.py)
+        filters purely on status, never docstatus - so a request cancelled
+        this way keeps getting daily reminders sent out indefinitely despite
+        showing as Cancelled everywhere else in the UI. Confirmed live: two
+        requests kept reminding a signer for 13 days before anyone noticed,
+        because the document already being at docstatus=2 also blocks the
+        *other* cancel path (cancel_request()'s own request.save() call)
+        from fixing status after the fact - once a request reaches this
+        state, this hook is the only way, so this applies the same
+        status/signer/event bookkeeping cancel_request() does, via
+        db_set()/frappe.db.set_value() rather than self.save() - this
+        already runs inside the cancel's own save cycle (docstatus is
+        already 2 in the database by this point), so a second full .save()
+        here would be redundant at best and risks re-entrant validation.
+
+        Also aliased as on_discard: before_submit() only allows submitting
+        (docstatus 0->1) once status is already "Completed", so a request
+        abandoned before that (the common case - someone bails out of a
+        mis-configured Draft/Sent/Viewed request) is still docstatus=0 and
+        gets *Discarded* rather than Cancelled - a different Frappe action
+        (0->2 via a separate discard() method) with its own hook name, but
+        the exact same desync problem and the exact same fix. This was the
+        actual path both real stuck requests took.
+        """
+        self.db_set("status", "Cancelled", update_modified=False)
+        self.db_set("cancelled_on", now_datetime(), update_modified=False)
+
+        for signer in self.signers:
+            if signer.status not in ("Signed", "Declined"):
+                frappe.db.set_value(
+                    "Frappe Sign Signer", signer.name, "status", "Skipped", update_modified=False
+                )
 
         append_event(
             self.name,
             "Cancelled",
             details={"cancelled_by": frappe.session.user},
         )
+
+    on_discard = on_cancel
 
 
 def make_unique_request_name(base_name):
