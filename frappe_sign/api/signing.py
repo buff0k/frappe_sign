@@ -26,7 +26,7 @@ from frappe_sign.utils.pdf_digital_signing import digitally_sign_pdf
 from frappe_sign.utils.certificate_records import create_audit_certificate_record, create_final_verification_package_record
 
 
-OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
+OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed", "Needs Re-Sign")
 CLOSED_SIGNER_STATUSES = ("Signed", "Declined", "Skipped")
 
 
@@ -50,6 +50,7 @@ def _get_signer_from_token(token):
             "full_name",
             "status",
             "signing_order",
+            "role",
         ],
         as_dict=True,
     )
@@ -141,12 +142,29 @@ def get_signing_context(token):
                 }
             )
 
+    # Remarks are visible to every signer/viewer on the request, not just
+    # whoever placed them - unlike fields above, which are per-signer.
+    visible_remarks = [
+        {
+            "name": remark.name,
+            "page": remark.page,
+            "x_ratio": remark.x_ratio,
+            "y_ratio": remark.y_ratio,
+            "remark_text": remark.remark_text,
+            "signer_label": remark.signer_label,
+            "added_on": str(remark.added_on) if remark.added_on else None,
+        }
+        for remark in request.remarks
+    ]
+
     return {
         "request": request.name,
         "title": request.request_title,
         "source_pdf": request.signed_pdf or request.source_pdf,
         "request_modified": str(request.modified),
+        "request_status": request.status,
         "consent_required": is_consent_required(),
+        "allow_remarks": bool(request.allow_remarks),
         "signer": {
             "name": signer.name,
             "profile": signer.signer,
@@ -154,6 +172,7 @@ def get_signing_context(token):
             "email": signer.email,
             "status": signer.status,
             "signing_order": signer.signing_order,
+            "role": signer.role,
         },
         "profile": {
             "name": profile.name,
@@ -167,6 +186,7 @@ def get_signing_context(token):
             "consent_on": profile.consent_on,
         },
         "fields": visible_fields,
+        "remarks": visible_remarks,
     }
 
 

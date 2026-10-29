@@ -70,7 +70,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nSent\nViewed\nSigned\nDeclined\nSkipped"
+   "options": "Pending\nSent\nViewed\nSigned\nDeclined\nSkipped\nNeeds Re-Sign"
   },
   {
    "fieldname": "access_token_hash",
@@ -174,7 +174,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-09 13:50:06.905455",
+ "modified": "2026-10-29 08:29:38.051529",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Signer",

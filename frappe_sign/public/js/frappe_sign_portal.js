@@ -19,6 +19,9 @@ class FrappeSignPortal {
         this.drawing = false;
         this.last_point = null;
 
+        this.remark_mode = false;
+        this.pending_remark_point = null;
+
         this.init();
     }
 
@@ -39,6 +42,8 @@ class FrappeSignPortal {
         await this.load_context();
         await this.load_pdf();
         await this.render_pdf();
+
+        this.setup_remarks_ui();
 
         await this.start_required_profile_flow();
     }
@@ -140,7 +145,39 @@ class FrappeSignPortal {
                     </div>
                 </div>
             </div>
+
+            <div class="frappe-sign-modal-backdrop" id="frappe-sign-remark-modal" hidden>
+                <div class="frappe-sign-modal">
+                    <div class="frappe-sign-modal-header">
+                        <h3>${__("Add Remark")}</h3>
+                        <button type="button" class="btn btn-default btn-sm" id="frappe-sign-remark-close">
+                            ${__("Close")}
+                        </button>
+                    </div>
+
+                    <p class="frappe-sign-help">
+                        ${__("Signers who have already signed will be asked to re-sign.")}
+                    </p>
+
+                    <textarea class="form-control" id="frappe-sign-remark-text" rows="4" placeholder="${__("Type your remark here")}"></textarea>
+
+                    <div class="frappe-sign-modal-footer">
+                        <button type="button" class="btn btn-primary" id="frappe-sign-remark-save">
+                            ${__("Save Remark")}
+                        </button>
+                    </div>
+                </div>
+            </div>
         `);
+
+        $("#frappe-sign-remark-close").on("click", () => {
+            this.close_modal("#frappe-sign-remark-modal");
+            this.pending_remark_point = null;
+        });
+
+        $("#frappe-sign-remark-save").on("click", async () => {
+            await this.save_remark();
+        });
 
         $("#frappe-sign-consent-confirm").on("click", async () => {
             await this.give_consent();
@@ -196,6 +233,7 @@ class FrappeSignPortal {
         }
 
         this.render_fields();
+        this.render_remarks();
     }
 
     async render_page(page_number, container) {
@@ -339,6 +377,137 @@ class FrappeSignPortal {
             box.addClass("clickable");
             box.on("click", () => this.apply_initials_field(box));
         }
+    }
+
+    render_remarks() {
+        $(".frappe-sign-remark-pin").remove();
+
+        const remarks = this.context.remarks || [];
+
+        for (const remark of remarks) {
+            const overlay = $(`.frappe-sign-page-overlay[data-page="${remark.page}"]`);
+
+            if (!overlay.length) {
+                continue;
+            }
+
+            const width = overlay.width();
+            const height = overlay.height();
+
+            const pin = $(`
+                <div class="frappe-sign-remark-pin" data-remark="${frappe.utils.escape_html(remark.name)}">
+                    <div class="frappe-sign-remark-pin-marker">!</div>
+                    <div class="frappe-sign-remark-pin-note">
+                        <div class="frappe-sign-remark-pin-author">
+                            ${frappe.utils.escape_html(remark.signer_label || "")}
+                        </div>
+                        <div class="frappe-sign-remark-pin-text">
+                            ${frappe.utils.escape_html(remark.remark_text || "")}
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            pin.css({
+                left: `${remark.x_ratio * width}px`,
+                top: `${remark.y_ratio * height}px`,
+            });
+
+            overlay.append(pin);
+        }
+    }
+
+    setup_remarks_ui() {
+        const can_add_remarks =
+            !!this.context.allow_remarks && this.context.signer.role === "Signer";
+
+        if (!can_add_remarks) {
+            return;
+        }
+
+        const toolbar = this.root.find(".frappe-sign-toolbar");
+
+        if (!toolbar.length || toolbar.find("#frappe-sign-add-remark").length) {
+            return;
+        }
+
+        const toggle = $(`
+            <button type="button" class="btn btn-default" id="frappe-sign-add-remark">
+                ${__("Add Remark")}
+            </button>
+        `);
+
+        toggle.on("click", () => this.toggle_remark_mode(toggle));
+        toolbar.append(toggle);
+    }
+
+    toggle_remark_mode(toggle) {
+        this.remark_mode = !this.remark_mode;
+        toggle.toggleClass("btn-primary", this.remark_mode);
+        toggle.toggleClass("btn-default", !this.remark_mode);
+
+        $(".frappe-sign-page-overlay").toggleClass("frappe-sign-remark-placing", this.remark_mode);
+
+        if (this.remark_mode) {
+            $(".frappe-sign-page-overlay").on("click.frappe-sign-remark", (event) => {
+                this.handle_remark_placement_click(event);
+            });
+        } else {
+            $(".frappe-sign-page-overlay").off("click.frappe-sign-remark");
+        }
+    }
+
+    handle_remark_placement_click(event) {
+        const overlay = $(event.currentTarget);
+        const page_number = parseInt(overlay.attr("data-page"), 10);
+        const rect = event.currentTarget.getBoundingClientRect();
+
+        const x_ratio = (event.clientX - rect.left) / rect.width;
+        const y_ratio = (event.clientY - rect.top) / rect.height;
+
+        this.pending_remark_point = { page: page_number, x_ratio, y_ratio };
+
+        $("#frappe-sign-remark-text").val("");
+        this.open_modal("#frappe-sign-remark-modal");
+    }
+
+    async save_remark() {
+        if (!this.pending_remark_point) {
+            return;
+        }
+
+        const remark_text = $("#frappe-sign-remark-text").val();
+
+        if (!remark_text || !remark_text.trim()) {
+            frappe.msgprint(__("Please enter a remark."));
+            return;
+        }
+
+        const { page, x_ratio, y_ratio } = this.pending_remark_point;
+
+        await frappe.call({
+            method: "frappe_sign.api.remarks.add_remark",
+            args: {
+                token: this.token,
+                page,
+                x_ratio,
+                y_ratio,
+                remark_text,
+            },
+            freeze: true,
+            freeze_message: __("Saving remark..."),
+        });
+
+        this.pending_remark_point = null;
+        this.close_modal("#frappe-sign-remark-modal");
+
+        await this.refresh_context();
+        this.render_remarks();
+
+        frappe.show_alert({
+            message: __("Remark added."),
+            indicator: "green",
+        });
     }
 
     async start_required_profile_flow() {

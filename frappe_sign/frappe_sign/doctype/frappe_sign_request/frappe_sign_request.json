@@ -27,6 +27,9 @@
   "certificate_signed_pdf",
   "signers_section",
   "signers",
+  "remarks_section",
+  "allow_remarks",
+  "remarks",
   "technical_details_tab",
   "fields_section",
   "created_by",
@@ -125,7 +128,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPrepared\nSent\nViewed\nPartially Signed\nCompleted\nDeclined\nExpired\nCancelled\nFailed"
+   "options": "Draft\nPrepared\nSent\nViewed\nPartially Signed\nChanges Added\nCompleted\nDeclined\nExpired\nCancelled\nFailed"
   },
   {
    "default": "Parallel",
@@ -285,6 +288,24 @@
    "options": "Frappe Sign Field"
   },
   {
+   "fieldname": "remarks_section",
+   "fieldtype": "Section Break",
+   "label": "Remarks"
+  },
+  {
+   "default": "1",
+   "description": "Lets a Signer add a remark anywhere on the document while this request is still open. Adding a remark after some signers have already signed flags the request as Changes Added and requires them to re-sign.",
+   "fieldname": "allow_remarks",
+   "fieldtype": "Check",
+   "label": "Allow Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Table",
+   "label": "Remarks",
+   "options": "Frappe Sign Remark"
+  },
+  {
    "default": "Uploaded PDF",
    "fieldname": "source_type",
    "fieldtype": "Select",
@@ -311,7 +332,7 @@
    "link_fieldname": "frappe_sign_request"
   }
  ],
- "modified": "2026-08-03 11:22:16.277237",
+ "modified": "2026-10-29 08:29:38.051529",
  "modified_by": "Administrator",
  "module": "Frappe Sign",
  "name": "Frappe Sign Request",

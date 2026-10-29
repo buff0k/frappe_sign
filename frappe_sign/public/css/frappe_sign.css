@@ -340,6 +340,59 @@
     outline-offset: -2px;
 }
 
+.frappe-sign-page-overlay.frappe-sign-remark-placing {
+    cursor: copy;
+}
+
+.frappe-sign-remark-pin {
+    position: absolute;
+    z-index: 25;
+    transform: translate(-50%, -50%);
+}
+
+.frappe-sign-remark-pin-marker {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #f5a623;
+    color: #111827;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.frappe-sign-remark-pin-note {
+    display: none;
+    position: absolute;
+    top: 24px;
+    left: 0;
+    min-width: 160px;
+    max-width: 260px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    padding: 8px 10px;
+    font-size: 12px;
+    z-index: 30;
+}
+
+.frappe-sign-remark-pin:hover .frappe-sign-remark-pin-note {
+    display: block;
+}
+
+.frappe-sign-remark-pin-author {
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.frappe-sign-remark-pin-text {
+    white-space: pre-wrap;
+}
+
 .frappe-sign-alignment-guide {
     position: absolute;
     z-index: 40;

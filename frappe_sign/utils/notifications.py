@@ -10,8 +10,8 @@ from frappe_sign.utils.audit import append_event
 from frappe_sign.utils.files import get_file_bytes
 
 
-OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
-ACTIVE_REQUEST_STATUSES = ("Sent", "Viewed", "Partially Signed")
+OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed", "Needs Re-Sign")
+ACTIVE_REQUEST_STATUSES = ("Sent", "Viewed", "Partially Signed", "Changes Added")
 CLOSED_REQUEST_STATUSES = ("Completed", "Declined", "Expired", "Cancelled", "Failed")
 
 
@@ -228,6 +228,36 @@ def send_decline_notifications(request, completed_signer, reason=None):
 		message=message,
 		now=False,
 	)
+
+
+def send_remark_added_notifications(request, reset_signers, remark):
+	escaped_title = frappe.utils.escape_html(request.request_title or request.name)
+	escaped_remark = frappe.utils.escape_html(remark.remark_text or "")
+
+	for signer in reset_signers:
+		if not signer.email:
+			continue
+
+		escaped_name = frappe.utils.escape_html(signer.full_name or signer.email)
+		escaped_link = frappe.utils.escape_html(signer.signing_link or "")
+
+		message = f"""
+			<p>Hello {escaped_name},</p>
+			<p>A remark was added to a document you already signed, and your signature is required again:</p>
+			<p><strong>{escaped_title}</strong></p>
+			<p><strong>Remark:</strong> {escaped_remark}</p>
+			<p>
+				<a href="{escaped_link}">Open signing request</a>
+			</p>
+			<p>This link is unique to you and should not be shared.</p>
+		"""
+
+		frappe.sendmail(
+			recipients=[signer.email],
+			subject=f"Please re-sign: {request.request_title}",
+			message=message,
+			now=False,
+		)
 
 
 def send_completion_notification(request):
