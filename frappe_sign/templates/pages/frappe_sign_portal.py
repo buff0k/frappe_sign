@@ -3,6 +3,12 @@
 
 import frappe
 
+from frappe_sign.utils.notifications import (
+    CLOSED_REQUEST_STATUSES,
+    OPEN_SIGNER_STATUSES,
+    expire_request,
+    is_overdue,
+)
 from frappe_sign.utils.tokens import hash_signing_token
 
 
@@ -23,7 +29,7 @@ def get_context(context):
         "Frappe Sign Signer",
         {
             "access_token_hash": token_hash,
-            "status": ["in", ["Pending", "Sent", "Viewed"]],
+            "status": ["in", OPEN_SIGNER_STATUSES],
         },
         ["name", "parent"],
         as_dict=True,
@@ -35,7 +41,10 @@ def get_context(context):
 
     request = frappe.get_doc("Frappe Sign Request", signer.parent)
 
-    if request.status in ("Completed", "Declined", "Expired", "Cancelled", "Failed"):
+    if is_overdue(request):
+        expire_request(request)
+
+    if request.status in CLOSED_REQUEST_STATUSES:
         context.invalid_token = False
         context.closed = True
         context.request_status = request.status

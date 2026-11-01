@@ -8,6 +8,7 @@ from io import BytesIO
 import frappe
 from frappe.utils import now_datetime
 from PIL import Image, ImageDraw, ImageFont
+from PIL.PngImagePlugin import PngInfo
 
 from frappe_sign.api.request import create_file_hash
 from frappe_sign.utils.audit import append_event, sha256_bytes
@@ -15,6 +16,10 @@ from frappe_sign.utils.certificates import generate_audit_certificate
 from frappe_sign.utils.files import attach_private_file, get_file_bytes
 from frappe_sign.utils.notifications import (
     CLOSED_REQUEST_STATUSES,
+    CLOSED_SIGNER_STATUSES,
+    OPEN_SIGNER_STATUSES,
+    expire_request,
+    is_overdue,
     send_completion_notification,
     send_progress_notification,
 )
@@ -24,10 +29,6 @@ from frappe_sign.utils.tokens import hash_signing_token
 from frappe_sign.utils.pdf_merge import append_pdf_bytes
 from frappe_sign.utils.pdf_digital_signing import digitally_sign_pdf
 from frappe_sign.utils.certificate_records import create_audit_certificate_record, create_final_verification_package_record
-
-
-OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed", "Needs Re-Sign")
-CLOSED_SIGNER_STATUSES = ("Signed", "Declined", "Skipped")
 
 
 def _get_signer_from_token(token):
@@ -59,6 +60,9 @@ def _get_signer_from_token(token):
         frappe.throw("Invalid or expired signing token.")
 
     request = frappe.get_doc("Frappe Sign Request", signer.parent)
+
+    if is_overdue(request):
+        expire_request(request)
 
     if request.status in CLOSED_REQUEST_STATUSES:
         frappe.throw(f"This signing request is {request.status}.")
@@ -323,7 +327,20 @@ def make_typed_signature_png(text, kind):
     draw.text((x, y), text, fill=(17, 24, 39, 255), font=font)
 
     output = BytesIO()
-    image.save(output, format="PNG")
+
+    # make_typed_signature_png is a pure function of (text, kind) - two
+    # different signers typing the same text (easy for short Initials like
+    # "JS") produce byte-identical PNGs. save_file()'s content-hash
+    # deduplication then reuses the FIRST signer's private File for the
+    # SECOND signer's upload, and File.before_insert() -> validate_private_
+    # file_access() (which ignore_permissions does not bypass - it only
+    # checks self.flags.ignore_permissions nowhere) throws "You do not have
+    # permission to access this file" for a different, unrelated user.
+    # A per-call random PNG metadata chunk keeps every generated image's
+    # content hash unique without changing a single visible pixel.
+    metadata = PngInfo()
+    metadata.add_text("frappe_sign_nonce", frappe.generate_hash(length=16))
+    image.save(output, format="PNG", pnginfo=metadata)
 
     return output.getvalue()
 
@@ -571,7 +588,12 @@ def build_stamp_items(request, signer_row, profile, field_values):
                 image_bytes = get_file_bytes(profile.signature_image)
                 stamp_value = ""
             elif profile.signature_type == "Typed" and profile.signature_text:
-                stamp_value = profile.signature_text
+                # No stored signature_image (shouldn't normally happen - the
+                # "type" setup mode saves one - but render properly sized
+                # instead of falling back to small, plain draw_text if it's
+                # ever missing).
+                image_bytes = make_typed_signature_png(profile.signature_text, "signature")
+                stamp_value = ""
             else:
                 frappe.throw("No signature image or typed signature is saved on your Frappe Sign Profile.")
 

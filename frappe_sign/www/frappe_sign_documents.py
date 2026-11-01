@@ -4,12 +4,10 @@
 import frappe
 from frappe import _
 
+from frappe_sign.utils.notifications import ACTIVE_REQUEST_STATUSES, OPEN_SIGNER_STATUSES
+
 
 no_cache = 1
-
-
-ACTIVE_REQUEST_STATUSES = ("Sent", "Viewed", "Partially Signed")
-OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
 
 
 def get_context(context):

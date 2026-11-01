@@ -5,11 +5,13 @@ from urllib.parse import urlparse
 
 import frappe
 
-from frappe_sign.utils.notifications import CLOSED_REQUEST_STATUSES
-
-
-OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed")
-ACTIVE_REQUEST_STATUSES = ("Sent", "Viewed", "Partially Signed")
+from frappe_sign.utils.notifications import (
+	ACTIVE_REQUEST_STATUSES,
+	CLOSED_REQUEST_STATUSES,
+	OPEN_SIGNER_STATUSES,
+	expire_request,
+	is_overdue,
+)
 
 
 @frappe.whitelist()
@@ -91,20 +93,13 @@ def get_desk_signing_token(signer_row_name):
 	if signer.status not in OPEN_SIGNER_STATUSES:
 		frappe.throw("This signing request has already been signed or is no longer available.")
 
-	request = frappe.db.get_value(
-		"Frappe Sign Request",
-		signer.parent,
-		[
-			"name",
-			"status",
-			"signing_mode",
-			"current_signing_order",
-		],
-		as_dict=True,
-	)
-
-	if not request:
+	if not frappe.db.exists("Frappe Sign Request", signer.parent):
 		frappe.throw("Signing request was not found.")
+
+	request = frappe.get_doc("Frappe Sign Request", signer.parent)
+
+	if is_overdue(request):
+		expire_request(request)
 
 	if request.status in CLOSED_REQUEST_STATUSES or request.status not in ACTIVE_REQUEST_STATUSES:
 		frappe.throw(f"This signing request is {request.status}.")

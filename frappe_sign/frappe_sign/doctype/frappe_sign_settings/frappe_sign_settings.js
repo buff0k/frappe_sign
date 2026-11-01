@@ -220,12 +220,23 @@ frappe.ui.form.on("Frappe Sign Settings", {
 
 frappe.ui.form.on("Frappe Sign Source DocType", {
     source_doctype(frm, cdt, cdn) {
-        update_attach_signed_pdf_field_options(frm, cdt, cdn);
+        // The user is changing the source doctype - the previously stored
+        // field almost certainly doesn't exist on the new doctype, so clear it.
+        update_attach_signed_pdf_field_options(frm, cdt, cdn, { reset_value: true });
+    },
+    refresh(frm, cdt, cdn) {
+        // A saved row is just being displayed (form load, grid row opened) -
+        // the Select's options list starts empty every time, so without this
+        // the stored value renders blank even though it's still the real,
+        // saved value. Recompute the options and keep the value if it's
+        // still valid for this row's source doctype.
+        update_attach_signed_pdf_field_options(frm, cdt, cdn, { reset_value: false });
     },
 });
 
-function update_attach_signed_pdf_field_options(frm, cdt, cdn) {
+function update_attach_signed_pdf_field_options(frm, cdt, cdn, { reset_value } = {}) {
     const row = locals[cdt][cdn];
+    const previous_value = row.attach_signed_pdf_field;
 
     const apply_options = () => {
         let options = [""];
@@ -244,7 +255,9 @@ function update_attach_signed_pdf_field_options(frm, cdt, cdn) {
             options.join("\n")
         );
 
-        frappe.model.set_value(cdt, cdn, "attach_signed_pdf_field", "");
+        const keep_value = !reset_value && previous_value && options.includes(previous_value);
+
+        frappe.model.set_value(cdt, cdn, "attach_signed_pdf_field", keep_value ? previous_value : "");
     };
 
     if (row.source_doctype) {

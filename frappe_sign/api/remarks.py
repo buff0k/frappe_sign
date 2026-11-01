@@ -5,14 +5,17 @@ import frappe
 from frappe.utils import cint, flt, now_datetime
 
 from frappe_sign.api.signing import (
-    OPEN_SIGNER_STATUSES,
     _get_signer_from_token,
     _get_signer_row,
     ensure_signer_can_act,
     lock_request,
 )
 from frappe_sign.utils.audit import append_event
-from frappe_sign.utils.notifications import CLOSED_REQUEST_STATUSES, send_remark_added_notifications
+from frappe_sign.utils.notifications import (
+    CLOSED_REQUEST_STATUSES,
+    OPEN_SIGNER_STATUSES,
+    send_remark_added_notifications,
+)
 
 
 @frappe.whitelist(allow_guest=True)

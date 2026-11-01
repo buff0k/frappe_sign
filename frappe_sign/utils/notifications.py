@@ -11,8 +11,73 @@ from frappe_sign.utils.files import get_file_bytes
 
 
 OPEN_SIGNER_STATUSES = ("Pending", "Sent", "Viewed", "Needs Re-Sign")
+CLOSED_SIGNER_STATUSES = ("Signed", "Declined", "Skipped")
 ACTIVE_REQUEST_STATUSES = ("Sent", "Viewed", "Partially Signed", "Changes Added")
 CLOSED_REQUEST_STATUSES = ("Completed", "Declined", "Expired", "Cancelled", "Failed")
+
+
+def is_overdue(request):
+	# docstatus can drift out of sync with the custom status field (e.g. the
+	# generic Frappe "Cancel" action on this submittable doctype only touches
+	# docstatus, not status) - request.save() unconditionally rejects any
+	# edit once docstatus is 2, regardless of what status says, so a
+	# cancelled-docstatus request must never be treated as overdue.
+	return bool(
+		request.docstatus == 0
+		and request.status in ACTIVE_REQUEST_STATUSES
+		and request.expires_on
+		and request.expires_on < now_datetime()
+	)
+
+
+def expire_request(request):
+	"""Transition an overdue request to Expired, closing its still-open signers.
+
+	Called both from the daily scheduled sweep and lazily, on access, from
+	every entry point that resolves a request by its signing token/link -
+	Expires On used to only stop reminders; this is what actually enforces it,
+	without a day-long window where an overdue link still works.
+	"""
+	request.status = "Expired"
+
+	for signer in request.signers:
+		if signer.status not in CLOSED_SIGNER_STATUSES:
+			signer.status = "Skipped"
+
+	request.save(ignore_permissions=True)
+
+	append_event(request.name, "Expired", details={"expires_on": str(request.expires_on)})
+
+
+def expire_overdue_signing_requests():
+	"""Scheduled (daily): catch overdue requests nobody has tried to access,
+	so reporting/lists reflect Expired even without a lazy on-access trigger."""
+	overdue_requests = frappe.get_all(
+		"Frappe Sign Request",
+		filters={
+			"docstatus": 0,
+			"status": ["in", ACTIVE_REQUEST_STATUSES],
+			"expires_on": ["<", now_datetime()],
+		},
+		pluck="name",
+	)
+
+	for request_name in overdue_requests:
+		request = frappe.get_doc("Frappe Sign Request", request_name)
+
+		if not is_overdue(request):
+			# Re-check against live data, not the query snapshot - this
+			# specific request may have been acted on (and already lazily
+			# expired, signed, etc.) by the time this loop reaches it.
+			continue
+
+		try:
+			expire_request(request)
+		except Exception:
+			frappe.log_error(
+				f"Failed to expire overdue Frappe Sign Request {request_name}",
+				"frappe_sign expire_overdue_signing_requests",
+			)
 
 
 def get_current_notification_signers(request):
@@ -193,6 +258,7 @@ def send_next_signer_notifications(request, completed_signer):
 
 def send_decline_notifications(request, completed_signer, reason=None):
 	recipients = set()
+	add_request_creator_email(request, recipients)
 
 	for signer in request.signers:
 		if signer.role != "Signer":
@@ -367,7 +433,8 @@ def send_daily_signing_reminders():
 	for request_name in requests:
 		request = frappe.get_doc("Frappe Sign Request", request_name)
 
-		if request.expires_on and request.expires_on < now_datetime():
+		if is_overdue(request):
+			expire_request(request)
 			continue
 
 		for signer in get_current_notification_signers(request):

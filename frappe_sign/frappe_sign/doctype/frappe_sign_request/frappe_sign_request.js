@@ -134,13 +134,13 @@ frappe.ui.form.on("Frappe Sign Request", {
             }, __("Frappe Sign"));
         }
 
-        if (["Draft", "Prepared", "Sent", "Viewed", "Partially Signed"].includes(frm.doc.status)) {
+        if (["Draft", "Prepared", "Sent", "Viewed", "Partially Signed", "Changes Added"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Copy Signer Link"), () => {
                 frm.trigger("copy_signer_link");
             }, __("Frappe Sign"));
         }
 
-        if (["Sent", "Viewed", "Partially Signed"].includes(frm.doc.status)) {
+        if (["Sent", "Viewed", "Partially Signed", "Changes Added"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Resend Links"), async () => {
                 await frappe.call({
                     method: "frappe_sign.api.request.resend_request",
@@ -158,7 +158,7 @@ frappe.ui.form.on("Frappe Sign Request", {
         // Cancellable for any not-yet-concluded status (Draft/Prepared included) -
         // server-side has_frappe_sign_request_permission() already restricts this
         // to a Frappe Sign Manager (any request) or the request's own Sender.
-        if (["Draft", "Prepared", "Sent", "Viewed", "Partially Signed"].includes(frm.doc.status)) {
+        if (["Draft", "Prepared", "Sent", "Viewed", "Partially Signed", "Changes Added"].includes(frm.doc.status)) {
             frm.add_custom_button(__("Cancel Request"), async () => {
                 frappe.confirm(
                     __("Cancel this signing request?"),

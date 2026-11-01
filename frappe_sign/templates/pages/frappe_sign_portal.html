@@ -73,6 +73,29 @@
 {% endblock %}
 
 {% block script %}
+<script>
+    // Signing links carry a bearer token in the path itself (/sign/<token>) -
+    // the site's Google Analytics (or any other page-tracking script that
+    // reads document.location) would otherwise record and transmit the full,
+    // still-usable token to Google. history.replaceState mutates
+    // window.location itself, not just what's displayed, so every later
+    // reader of document.location/pathname - including an analytics pageview
+    // send that fires asynchronously after this runs - sees the sanitized
+    // path instead. The page's own signing logic never re-reads the token
+    // from the URL (it comes from the data-token attribute below), so this
+    // is safe to do unconditionally.
+    (function () {
+        if (!window.history || !window.history.replaceState) {
+            return;
+        }
+
+        var sanitized_path = window.location.pathname.replace(/^(\/sign\/)[^/]+$/, "$1redacted");
+
+        if (sanitized_path !== window.location.pathname) {
+            window.history.replaceState(null, document.title, sanitized_path + window.location.hash);
+        }
+    })();
+</script>
 <script src="/assets/frappe_sign/js/pdfjs/pdf.min.js"></script>
 <script>
     if (window.pdfjsLib) {

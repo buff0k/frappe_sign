@@ -8,15 +8,14 @@ from frappe_sign.permissions import is_frappe_sign_sender
 from frappe_sign.utils.audit import append_event, sha256_bytes
 from frappe_sign.utils.files import attach_private_file, get_file_bytes
 from frappe_sign.utils.notifications import (
+    ACTIVE_REQUEST_STATUSES,
     CLOSED_REQUEST_STATUSES,
+    CLOSED_SIGNER_STATUSES,
     get_current_notification_signers,
     send_signing_request_email,
 )
 from frappe_sign.utils.pdf import render_source_pdf
 from frappe_sign.utils.tokens import generate_signing_token, hash_signing_token
-
-
-CLOSED_SIGNER_STATUSES = ("Signed", "Declined", "Skipped")
 
 
 @frappe.whitelist()
@@ -202,7 +201,7 @@ def resend_request(request_name):
     if not frappe.has_permission("Frappe Sign Request", "write", doc=request):
         frappe.throw("You do not have permission to resend this request.")
 
-    if request.status not in ("Sent", "Viewed", "Partially Signed"):
+    if request.status not in ACTIVE_REQUEST_STATUSES:
         frappe.throw("Only active requests can be resent.")
 
     resent_count = 0
