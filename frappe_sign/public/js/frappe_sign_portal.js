@@ -347,7 +347,16 @@ class FrappeSignPortal {
 
         if (field.field_type === "Text") {
             const input = $(`<input type="text" class="form-control frappe-sign-inline-input">`);
+            input.attr({ placeholder: __("Text"), title: __("Text"), "aria-label": __("Text") });
             box.find(".frappe-sign-signing-field-value").append(input);
+
+            // Clicking anywhere on the box (border, padding) focuses the input.
+            box.on("mousedown", (event) => {
+                if (event.target !== input[0]) {
+                    event.preventDefault();
+                    input.trigger("focus");
+                }
+            });
 
             input.on("input", () => {
                 box.toggleClass("completed", !!input.val());
@@ -358,7 +367,14 @@ class FrappeSignPortal {
 
         if (field.field_type === "Checkbox") {
             const input = $(`<input type="checkbox" class="frappe-sign-inline-checkbox">`);
+            input.attr({ title: __("Checkbox"), "aria-label": __("Checkbox") });
             box.find(".frappe-sign-signing-field-value").append(input);
+
+            box.on("click", (event) => {
+                if (event.target !== input[0]) {
+                    input.prop("checked", !input.is(":checked")).trigger("change");
+                }
+            });
 
             input.on("change", () => {
                 box.toggleClass("completed", input.is(":checked"));
@@ -1077,10 +1093,23 @@ class FrappeSignPortal {
     }
 }
 
-frappe.ready(() => {
-    const root = document.getElementById("frappe-sign-root");
+// Auto-boot for the website /sign/<token> page only. The desk signing page
+// constructs FrappeSignPortal itself, and Frappe 16's desk no longer defines
+// frappe.ready (calling it threw "frappe.ready is not a function").
+(function () {
+    const boot = () => {
+        const root = document.getElementById("frappe-sign-root");
 
-    if (root) {
-        window.frappe_sign_portal = new FrappeSignPortal(root);
+        if (root && !window.frappe_sign_portal && !document.querySelector(".frappe-sign-desk-sign")) {
+            window.frappe_sign_portal = new FrappeSignPortal(root);
+        }
+    };
+
+    if (typeof frappe !== "undefined" && typeof frappe.ready === "function") {
+        frappe.ready(boot);
+    } else if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+    } else {
+        boot();
     }
-});
+})();
